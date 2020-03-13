@@ -83,6 +83,8 @@ class CtlDescriptor(object):
         self.stnmPath = ''
         self.storage  = ''
         self.dtype    = ''
+        self.title    = ''
+        self.incre    = ''
         
         self.zrev     = False
         self.yrev     = False
@@ -120,14 +122,15 @@ class CtlDescriptor(object):
         elif kwargs.get('content'):
             fileContent = kwargs['content'].lower().splitlines()
         else:
-            raise Exception('invalid key word (file='' or content='' is allowed)')
+            raise Exception('invalid key word '+
+                            '(file='' or content='' is allowed)')
         
         self.parse(fileContent)
     
     def parse(self, fileContent):
         for oneline in fileContent:
             if   oneline.startswith('dset'):
-                self._processDSet(oneline)
+                dpath_str = oneline.split()[1]
             elif oneline.startswith('index'):
                 self._processIndex(oneline)
             elif oneline.startswith('stnmap'):
@@ -150,9 +153,55 @@ class CtlDescriptor(object):
                 self._processTDef(oneline)
             elif oneline.startswith('vars'):
                 self._processVars(oneline, fileContent)
+        
+        if self.template:
+            self._processDSets(dpath_str)
+        else:
+            self._processDSet(dpath_str)
+        
+        if self.yrev:
+            self.ydef.samples = np.flip(self.ydef.samples)
+        
+        if self.zrev:
+            self.zdef = np.flip(self.zdef)
     
-    def _processDSet(self, oneline):
-        self.dsetPath = oneline.split()[1]
+    def _processDSets(self, dpath_str):
+        strTim = self.tdef.samples[0]
+        incre  = self.incre
+        
+        strPos = dpath_str.index('%')
+        endPos = len(dpath_str) - dpath_str[::-1].index('%') + 2
+        
+        template = dpath_str[strPos:endPos]
+        
+        tokens = []
+        for token in self._split_by_len(template, 3):
+            tokens.append(self._get_template_format(token))
+        
+        fmt = ''.join(tokens)
+        
+        fileList = []
+        for l in range(len(self.tdef.samples)):
+            part = (strTim + incre * l).item().strftime(fmt)
+            
+            fname = dpath_str[:strPos] + part + dpath_str[endPos:]
+            
+            # remove duplicated file
+            if fname not in fileList:
+                fileList.append(fname)
+        
+        self.dsetPath = np.array(fileList)
+        
+        has = True
+        for file in fileList:
+            if not os.path.exists(file):
+                has = False
+                break
+
+        self.hasData = has
+        
+    def _processDSet(self, dpath_str):
+        self.dsetPath = dpath_str
         self.hasData  = os.path.exists(self.dsetPath)
     
     def _processIndex(self, oneline):
@@ -185,16 +234,21 @@ class CtlDescriptor(object):
             self.xdef = Coordinate('xdef', np.arange(start,
                                                      start + intv * xnum,
                                                      intv, dtype=np.float32))
-        elif not xlnr and len(tokens)-3 == xnum:
-            self.xdef = Coordinate('xdef', np.array([float(i)
-                                    for i in tokens[3:]]))
-
-        elif not xlnr and len(tokens) == 3:
-            startIdx  = fileContent.index(oneline) + 1
-            self.xdef = Coordinate('xdef', np.array([float(fileContent[i])
-                                    for i in range(startIdx, startIdx + xnum)]))
-
-        else: raise Exception('invalid format of xdef values')
+        else:
+            values = [float(i) for i in tokens[3:]]
+            count  = len(values)
+            index  = fileContent.index(oneline) + 1
+            
+            while count < xnum:
+                split = fileContent[index].split()
+                values += [float(v) for v in split]
+                count  += len(split)
+                index  += 1
+            
+            if count != xnum:
+                raise Exception('not parse xdef correctly')
+            
+            self.xdef = Coordinate('xdef', np.array(values))
 
         self.periodicX = self.xdef.isPeriodic(360)
 
@@ -212,20 +266,26 @@ class CtlDescriptor(object):
             self.ydef = Coordinate('ydef', np.arange(start,
                                                      start + intv * ynum,
                                                      intv, dtype=np.float32))
-        elif not ylnr and len(tokens)-3 == ynum:
-            self.ydef = Coordinate('ydef',np.array([float(i)
-                                    for i in tokens[3:]]))
+        else:
+            values = [float(i) for i in tokens[3:]]
+            count  = len(values)
+            index  = fileContent.index(oneline) + 1
             
-        elif not ylnr and len(tokens) == 3:
-            startIdx  = fileContent.index(oneline)+1
-            self.ydef = Coordinate('ydef', np.array([float(fileContent[i])
-                                    for i in range(startIdx, startIdx + ynum)]))
+            while count < ynum:
+                split = fileContent[index].split()
+                values += [float(v) for v in split]
+                count  += len(split)
+                index  += 1
             
-        else: raise Exception('invalid format of ydef values')
+            if count != ynum:
+                raise Exception(('not parse ydef correctly, count={0} '+
+                                 'while ynum={1}').format(count, ynum))
+            
+            self.ydef = Coordinate('ydef', np.array(values))
     
     def _processZDef(self, oneline, fileContent):
-        tokens=oneline.split()
-        znum=int(tokens[1])
+        tokens = oneline.split()
+        znum   = int(tokens[1])
         
         if   tokens[2] == 'linear': zlnr = True
         elif tokens[2] == 'levels': zlnr = False
@@ -234,39 +294,39 @@ class CtlDescriptor(object):
         
         if zlnr:
             start, intv = float(tokens[3]), float(tokens[4])
-            self.zdef = Coordinate('zdef', np.array([start + intv * i
-                                    for i in range(znum)]))
+            self.zdef = Coordinate('zdef', np.arange(start,
+                                                     start + intv * znum,
+                                                     intv, dtype=np.float32))
             
-        elif not zlnr and len(tokens)-3 == znum:
-            self.zdef = Coordinate('zdef', np.array([float(i)
-                                    for i in tokens[3:]]))
+        else:
+            values = [float(i) for i in tokens[3:]]
+            count  = len(values)
+            index  = fileContent.index(oneline) + 1
             
-        elif not zlnr and len(tokens) == 3:
-            startIdx  = fileContent.index(oneline) + 1
+            while count < znum:
+                split = fileContent[index].split()
+                values += [float(v) for v in split]
+                count  += len(split)
+                index  += 1
             
-            tmp = fileContent[startIdx].split()
+            if count != znum:
+                raise Exception('not parse zdef correctly')
             
-            if len(tmp) > 1:
-                self.zdef = Coordinate('zdef', np.array([float(s)
-                                for s in tmp]))
-            else:
-                self.zdef = Coordinate('zdef', np.array([float(fileContent[i])
-                                for i in range(startIdx, startIdx + znum)]))
-            
-        else: raise Exception('invalid format of zdef values')
-    
+            self.zdef = Coordinate('zdef', np.array(values))
+
     def _processTDef(self, oneline):
         tokens = oneline.split()
         tnum   = int(tokens[1])
-        
+
         if tokens[2]!='linear':
             raise Exception('nonlinear tdef is not supported')
-        
+
         start = GrADStime_to_datetime64(tokens[3])
         intv  = GrADS_increment_to_timedelta64(tokens[4])
-        
-        self.tdef = Coordinate('tdef', np.arange(start,
-                                                 start + intv * tnum, intv))
+
+        self.incre = intv
+        self.tdef  = Coordinate('tdef', np.arange(start,
+                                                  start + intv * tnum, intv))
     
     def _processVars(self, oneline, fileContent):
         if (self.dtype != 'station' and 
@@ -337,6 +397,118 @@ class CtlDescriptor(object):
         
         if fileContent[start + vnum].strip() != 'endvars':
             raise Exception('endvars is expected')
+
+    def _get_template_format(self, part):
+        """
+        Get time format string.  See the following URL for reference:
+        http://cola.gmu.edu/grads/gadoc/templates.html
+        
+        %x1   1 digit decade
+        %x3   3 digit decade
+        %y2   2 digit year
+        %y4   4 digit year
+        %m1   1 or 2 digit month
+        %m2   2 digit month (leading zero if needed)
+        %mc   3 character month abbreviation
+        %d1   1 or 2 digit day
+        %d2   2 digit day (leading zero if needed)
+        %h1   1 or 2 digit hour
+        %h2   2 digit hour
+        %h3   3 digit hour (e.g., 120 or 012)
+        %n2   2 digit minute; leading zero if needed
+        %f2   2 digit forecast hour; leading zero if needed; more digits added
+              for hours >99; hour values increase indefinitely
+        %f3   3 digit forecast hour; leading zeros if needed; more digits added
+              for hours >999; hour values increase indefinitely
+        %fn2  2 digit forecast minute; leading zero if needed; more digits added
+              for minutes > 99; minute values increase indefinitely (2.0.a9+)
+        %fhn  forecast time expressed in hours and minutes (hhnn) where minute
+              value (nn) is always <=59 and hour value (hh) increases indefinitely.
+              If hh or nn are <=9, they are padded with a 0, so they are always at
+              least 2 digits; more digits added for hours >99. (2.0.a9+)
+        %fdhn forecast time expressed in days, hours, and minutes (ddhhnn) where
+              minute value (nn) is always <=59, hour value (hh) is always <=23 and
+              day value (dd) increases indefinitely. If dd, hh, or nn are <=9, they
+              are padded with a 0 so they are always at least 2 digits; more digits
+              added for days >99. (2.0.a9+)
+        %j3   3 digit julian day (day of year) (2.0.a7+)
+        %t1   1 or 2 digit time index (file names contain number sequences that
+              begin with 1 or 01) (2.0.a7+)
+        %t2   2 digit time index (file names contain number sequences that begin
+              with 01) (2.0.a7+)
+        %t3   3 digit time index (file names contain number sequences that begin
+              with 001) (2.0.a7+)
+        %t4   4 digit time index (file names contain number sequences that begin
+              with 0001) (2.0.a8+)
+        %t5   5 digit time index (file names contain number sequences that begin
+              with 00001) (2.0.a8+)
+        %t6   6 digit time index (file names contain number sequences that begin
+              with 000001) (2.0.a8+)
+        %tm1  1 or 2 digit time index (file names contain number sequences that
+              begin with 0 or 00) (2.0.a7+)
+        %tm2  2 digit time index (file names contain number sequences that begin
+              with 00) (2.0.a7+)
+        %tm3  3 digit time index (file names contain number sequences that begin
+              with 000) (2.0.a7+)
+        %tm4  4 digit time index (file names contain number sequences that begin
+              with 0000) (2.0.a8+)
+        %tm5  5 digit time index (file names contain number sequences that begin
+              with 00000) (2.0.a8+)
+        %tm6  6 digit time index (file names contain number sequences that begin
+              with 000000) (2.0.a8+)
+    
+        Parameters
+        ----------
+        part : str
+            A string in the above format started with %.
+    
+        Returns
+        -------
+        re : str
+            A string represents the format in python datetime
+        """
+        if   part == '%y2':
+            return '%y'
+        elif part == '%y4':
+            return '%Y'
+        elif part == '%m1':
+            return '%m'
+        elif part == '%m2':
+            return '%m'
+        elif part == '%mc':
+            return '%b'
+        elif part == '%d1':
+            return '%d'
+        elif part == '%d2':
+            return '%d'
+        elif part == '%h1':
+            return '%H'
+        elif part == '%h2':
+            return '%H'
+        elif part == '%n2':
+            return '%M'
+        else:
+            raise Exception('unsupported format: ' + part)
+
+    def _split_by_len(self, s, size):
+        """
+        Split a string by a given size.
+    
+        Parameters
+        ----------
+        s : str
+            A given string.
+        size : int
+            A given size.
+    
+        Returns
+        -------
+        re : list
+            A list contains the splitted strings.
+        """
+        chunks = len(s)
+        
+        return [s[i:i + size] for i in range(0, chunks, size)]
 
     def __str__(self):
         """
@@ -504,14 +676,53 @@ def open_CtlDataset(desfile):
 
     ctl = CtlDescriptor(file=desfile)
     
-    expect = ctl.tRecLength * ctl.tdef.length()
-    actual = os.path.getsize(ctl.dsetPath)
-    
-    if expect != actual:
-        raise Exception('expected binary file size: {0}, actual size: {1}'
-                        .format(expect, actual))
+    if ctl.template:
+        tcount = len(ctl.tdef.samples) # number of total time count
+        tcPerf = []                    # number of time count per file
+        
+        for file in ctl.dsetPath:
+            fsize = os.path.getsize(file)
+            
+            if fsize % ctl.tRecLength != 0:
+                raise Exception('incomplete file for ' + file +
+                                '(not multiple of ' + ctl.tRecLength +
+                                ' bytes)')
+            
+            tcPerf.append(fsize // ctl.tRecLength)
+        
+        total_size = sum(tcPerf)
+        
+        if total_size < tcount:
+            raise Exception('no enough files for ' + str(tcount) +
+                            ' time records')
+        
+        # get time record number in each file
+        rem = tcount
+        idx = 0
+        for i, num in enumerate(tcPerf):
+            rem -= num
+            if rem <= 0:
+                idx = i
+                break
 
-    binData = __read_as_dask(ctl)
+        tcPerf_m      = tcPerf[:idx+1]
+        tcPerf_m[idx] = tcPerf[idx   ] + rem
+        
+        # print(ctl.dsetPath)
+        # print(tcPerf)
+        # print(tcPerf_m)
+        
+        binData = __read_template_as_dask(ctl, tcPerf_m)
+        
+    else:
+        expect = ctl.tRecLength * ctl.tdef.length()
+        actual = os.path.getsize(ctl.dsetPath)
+        
+        if expect != actual:
+            raise Exception('expected binary file size: {0}, actual size: {1}'
+                            .format(expect, actual))
+    
+        binData = __read_as_dask(ctl)
 
     variables = []
 
@@ -610,6 +821,9 @@ def GrADS_increment_to_timedelta64(incre):
 Helper (private) methods are defined below
 """
 def __read_as_dask(dd):
+    """
+    Read binary data and return as a dask array
+    """
     t, y, x = dd.tdef.length(), dd.ydef.length(), dd.xdef.length()
 
     totalNum = sum([reduce(lambda x, y:
@@ -622,7 +836,7 @@ def __read_as_dask(dd):
     dtype   = '<f4' if dd.byteOrder == 'little' else '>f4'
 
     for m, v in enumerate(dd.vdef):
-        if totalNum < (100 * 100 * 100 * 10 ): # about 40 MB, chunk all
+        if totalNum < (100 * 100 * 100 * 10): # about 40 MB, chunk all
             # print('small')
             chunk = (t, v.zcount, y, x)
             shape = (t, v.zcount, y, x)
@@ -656,6 +870,54 @@ def __read_as_dask(dd):
             dsk = {(v.name+'_@miniufo', l, 0, 0, 0):
                    (__read_var, dd.dsetPath, v, dd.tRecLength, l, None, dtype)
                    for l in range(t)}
+
+            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
+                                     dtype=dtype,
+                                     shape=shape))
+
+    return binData
+
+
+def __read_template_as_dask(dd, tcPerf):
+    """
+    Read template binary data and return as a dask array
+    """
+    t, y, x = dd.tdef.length(), dd.ydef.length(), dd.xdef.length()
+
+    totalNum = sum([reduce(lambda x, y:
+                    x*y, (tcPerf[0],v.zcount,y,x)) for v in dd.vdef])
+
+    # print(totalNum * 4.0 / 1024.0 / 1024.0)
+
+    binData = []
+    
+    dtype   = '<f4' if dd.byteOrder == 'little' else '>f4'
+
+    for m, v in enumerate(dd.vdef):
+        if totalNum > (200 * 100 * 100 * 100): # about 800 MB, chunk 2D slice
+            # print('large')
+            chunk = (1, 1, y, x)
+            shape = (t, v.zcount, y, x)
+
+            dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), k, 0, 0):
+                   (__read_var, f, v, dd.tRecLength, l, k, dtype)
+                   for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
+                   for l in range(tcPerf[m])
+                   for k in range(v.zcount)}
+
+            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
+                                     dtype=dtype,
+                                     shape=shape))
+
+        else: # in between, chunk 3D slice
+            # print('between')
+            chunk = (1, v.zcount, y, x)
+            shape = (t, v.zcount, y, x)
+
+            dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), 0, 0, 0):
+                   (__read_var, f, v, dd.tRecLength, l, None, dtype)
+                   for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
+                   for l in range(tcPerf[m])}
 
             binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
                                      dtype=dtype,
@@ -734,7 +996,7 @@ def __read_var(file, var, tstride, tstep, zstep, dtype):
     else:
         raise Exception('invalid storage ' + var.storage +
                         ', only "99" or "-1,20" are supported')
-        
+
 
 def __read_continuous(file, offset=0, shape=None, dtype='<f4', use_mmap=True):
     """

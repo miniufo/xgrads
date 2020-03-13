@@ -23,6 +23,7 @@ content=\
 
 print(CtlDescriptor(content=content))
 
-for i in range(6):
+for i in range(9):
     print(CtlDescriptor(file='../ctls/test'+str(i+1)+'.ctl'))
     print('\n')
+
