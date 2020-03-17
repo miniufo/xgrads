@@ -526,6 +526,7 @@ class CtlDescriptor(object):
             '       zrev: ' + str(self.zrev)      + '\n'\
             '       yrev: ' + str(self.yrev)      + '\n'\
             '      dtype: ' + str(self.dtype)     + '\n'\
+            '   template: ' + str(self.template) + '\n'\
             '  periodicX: ' + str(self.periodicX) + '\n'\
             ' cal365Days: ' + str(self.cal365Days)+ '\n'\
             ' sequential: ' + str(self.hasData)   + '\n'\
