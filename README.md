@@ -1,7 +1,7 @@
 # xgrads
 **Parse and read GrADS ctl and binary files into xarray**
 
-![3D plot](https://raw.githubusercontent.com/miniufo/xgrads/master/pics/3DLogo.png)
+![3D plot](./pics/3DLogo.png)
 
 
 ## 1. Introduction
