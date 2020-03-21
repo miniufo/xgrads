@@ -1,5 +1,4 @@
 # xgrads
-**Parse and read GrADS ctl and binary files into xarray**
 
 ![3D plot](./pics/3D.png)
 
