@@ -1048,5 +1048,5 @@ if __name__=='__main__':
     print(CtlDescriptor(content=content))
 
     for i in range(6):
-        print(CtlDescriptor(file='./ctls/test'+str(i+1)+'.ctl'))
+        print(CtlDescriptor(file='../ctls/test'+str(i+1)+'.ctl'))
         print('\n')
