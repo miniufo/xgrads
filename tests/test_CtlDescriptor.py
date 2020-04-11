@@ -5,7 +5,7 @@ Created on 2020.03.02
 @author: MiniUFO
 Copyright 2018. All rights reserved. Use is subject to license terms.
 """
-from xgrads.core import CtlDescriptor
+from xgrads.xgrads import CtlDescriptor
 
 
 content=\
@@ -23,7 +23,7 @@ content=\
 
 print(CtlDescriptor(content=content))
 
-for i in range(9):
-    print(CtlDescriptor(file='../ctls/test'+str(i+1)+'.ctl'))
+for i in range(10):
+    print(CtlDescriptor(file='./xgrads/ctls/test'+str(i+1)+'.ctl'))
     print('\n')
 

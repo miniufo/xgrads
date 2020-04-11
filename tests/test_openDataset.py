@@ -5,7 +5,7 @@ Created on 2020.03.02
 @author: MiniUFO
 Copyright 2018. All rights reserved. Use is subject to license terms.
 """
-from xgrads.core import open_CtlDataset
+from xgrads.xgrads import open_CtlDataset
 import xarray as xr
 
 #dset = open_CtlDataset('D:/Data/ULFI/output/2017101712_1721.ctl')
@@ -16,7 +16,7 @@ import xarray as xr
 # dset = open_CtlDataset('D:/Data/MITgcm/flt/float/Stat.ctl')
 # dset = open_CtlDataset('../ctls/test8.ctl')
 
-dset = open_CtlDataset('../ctls/test9.ctl')
+dset = open_CtlDataset('./xgrads/ctls/test9.ctl')
 
 dset2 = xr.tutorial.open_dataset('air_temperature')
 
