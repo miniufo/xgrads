@@ -321,12 +321,10 @@ class CtlDescriptor(object):
         if tokens[2]!='linear':
             raise Exception('nonlinear tdef is not supported')
 
-        start = GrADStime_to_datetime64(tokens[3])
-        intv  = GrADS_increment_to_timedelta64(tokens[4])
-
-        self.incre = intv
-        self.tdef  = Coordinate('tdef', np.arange(start,
-                                                  start + intv * tnum, intv))
+        times = self._times_to_array(tokens[3], tokens[4], tnum)
+        
+        self.incre = GrADS_increment_to_timedelta64(tokens[4])
+        self.tdef  = Coordinate('tdef', times)
     
     def _processVars(self, oneline, fileContent):
         if (self.dtype != 'station' and 
@@ -510,6 +508,52 @@ class CtlDescriptor(object):
         
         return [s[i:i + size] for i in range(0, chunks, size)]
 
+
+    def _times_to_array(self, strTime, incre, tnum):
+        """
+        Convert GrADS time string of strart time and increment
+        to an array of numpy.datetime64.
+        
+        Parameters
+        ----------
+        strTime : str
+            Grads start time e.g., 00:00z01Jan2000.
+        incre : str
+            Grads time increment in str format e.g., 1dy.
+        tnum : int
+            Grads time increment in str format e.g., 1dy.
+        
+        Returns
+        ----------
+            re : numpy array of datetime64
+        """
+        if 'mo' in incre:
+            start = GrADStime_to_datetime(strTime)
+            
+            lst = []
+            for l in range(tnum):
+                y, m = start.year, start.month
+                y, m = y+int((m+l-1)/12), int((m+l-1)%12)+1
+                lst.append(start.replace(year=y, month=m))
+            
+            return np.asarray(lst, dtype='datetime64[s]')
+            
+        elif 'yr' in incre:
+            start = GrADStime_to_datetime(strTime)
+            
+            lst = []
+            for l in range(tnum):
+                y = start.year + l
+                lst.append(start.replace(year=y))
+            
+            return np.asarray(lst, dtype='datetime64[s]')
+        
+        else:
+            start = GrADStime_to_datetime64(strTime)
+            intv  = GrADS_increment_to_timedelta64(incre)
+            
+            return np.arange(start, start + intv * tnum, intv)
+
     def __str__(self):
         """
         Print this class as a string.
@@ -530,7 +574,7 @@ class CtlDescriptor(object):
             '  periodicX: ' + str(self.periodicX) + '\n'\
             ' cal365Days: ' + str(self.cal365Days)+ '\n'\
             ' sequential: ' + str(self.hasData)   + '\n'\
-            '  byteOrder: ' + str(self.hasData)   + '\n'\
+            '  byteOrder: ' + str(self.byteOrder) + '\n'\
             '       xdef: ' + str(self.xdef)      + '\n'\
             '       ydef: ' + str(self.ydef)      + '\n'\
             '       zdef: ' + str(self.zdef)      + '\n'\
@@ -761,7 +805,7 @@ def open_CtlDataset(desfile):
     return dset
 
 
-def GrADStime_to_datetime64(gradsTime):
+def GrADStime_to_datetime(gradsTime):
     """
     Convert GrADS time string e.g., 00:00z01Jan2000 to numpy.datetime64
     
@@ -772,7 +816,7 @@ def GrADStime_to_datetime64(gradsTime):
     
     Returns
     ----------
-        re : datetime64
+        re : datetime
     """
     lens = len(gradsTime)
     
@@ -786,6 +830,24 @@ def GrADStime_to_datetime64(gradsTime):
         time = datetime.strptime(gradsTime, "%b%Y"        )
     else:
         raise Exception('invalid length of GrADS date/time string')
+    
+    return time
+
+
+def GrADStime_to_datetime64(gradsTime):
+    """
+    Convert GrADS time string e.g., 00:00z01Jan2000 to numpy.datetime64
+    
+    Parameters
+    ----------
+    gradsTime : str
+        Grads time in str format e.g., 00:00z01Jan2000.
+    
+    Returns
+    ----------
+        re : datetime64
+    """
+    time = GrADStime_to_datetime(gradsTime)
     
     return datetime64(time.strftime('%Y-%m-%dT%H:%M:%S'))
 
