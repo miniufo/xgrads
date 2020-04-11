@@ -131,3 +131,6 @@ dmypy.json
 .pyre/
 
 .idea
+
+# private things
+private/
