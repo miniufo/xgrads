@@ -26,4 +26,3 @@ print(CtlDescriptor(content=content))
 for i in range(10):
     print(CtlDescriptor(file='./xgrads/ctls/test'+str(i+1)+'.ctl'))
     print('\n')
-

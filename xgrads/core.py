@@ -7,11 +7,9 @@ Copyright 2018. All rights reserved. Use is subject to license terms.
 """
 import os, sys, re
 import numpy as np
-import xarray as xr
-import dask.array as dsa
+import cartopy.crs as ccrs
 from datetime import datetime
 from numpy import datetime64, timedelta64
-from functools import reduce
 
 
 """
@@ -116,7 +114,7 @@ class CtlDescriptor(object):
                         line.startswith('index') or
                         line.startswith('stnmap')) and '^' in line:
                         fileContent[i] = line.replace('^',
-                                           os.path.dirname(abspath)+'/')
+                                           os.path.dirname(abspath))
             self.descPath=abspath
         
         elif kwargs.get('content'):
@@ -126,6 +124,15 @@ class CtlDescriptor(object):
                             '(file='' or content='' is allowed)')
         
         self.parse(fileContent)
+        
+    def get_data_projection(self):
+        """
+        Return the data projection indicated in PDEF for plot using cartopy.
+        """
+        if self.pdef is None:
+            return ccrs.PlateCarree()
+        else:
+            return self.pdef.get_projection()
     
     def parse(self, fileContent):
         for oneline in fileContent:
@@ -137,12 +144,17 @@ class CtlDescriptor(object):
                 self._processStnmap(oneline)
             elif oneline.startswith('dtype'):
                 self.dtype = oneline[5:].strip()
+            elif oneline.startswith('pdef'):
+                self._processPDEF(oneline)
             elif oneline.startswith('title'):
                 self.title = oneline.split()[1].strip()
             elif oneline.startswith('undef'):
                 self.undef = float(oneline.split()[1].strip())
             elif oneline.startswith('options'):
                 self._processOptions(oneline)
+            elif oneline.startswith('byteswapped'):
+                self.byteOrder  = 'big' \
+                    if sys.byteorder == 'little' else 'little'
             elif oneline.startswith('xdef'):
                 self._processXDef(oneline, fileContent)
             elif oneline.startswith('ydef'):
@@ -209,6 +221,9 @@ class CtlDescriptor(object):
     
     def _processStnmap(self, oneline):
         self.stnmPath = oneline.split()[1]
+    
+    def _processPDEF(self, oneline):
+        self.pdef = PDEF(oneline)
     
     def _processOptions(self, oneline):
         if 'yrev'             in oneline: self.yrev       = True
@@ -334,8 +349,8 @@ class CtlDescriptor(object):
         t = self.tdef.length()
         
         if self.dtype != 'station':
-            y = self.ydef.length()
-            x = self.xdef.length()
+            y = self.ydef.length() if self.pdef is None else self.pdef.jsize
+            x = self.xdef.length() if self.pdef is None else self.pdef.isize
         
             self.zRecLength = x * y * 4
         
@@ -376,7 +391,7 @@ class CtlDescriptor(object):
                 v.ycount = y
                 v.xcount = x
             
-            if v.storage=='99':
+            if v.storage in ['99', '0']:
                 v.strPos = vs.zcount * self.zRecLength + vs.strPos
                 type1 = True
             elif v.storage == '-1,20':
@@ -573,13 +588,97 @@ class CtlDescriptor(object):
             '   template: ' + str(self.template) + '\n'\
             '  periodicX: ' + str(self.periodicX) + '\n'\
             ' cal365Days: ' + str(self.cal365Days)+ '\n'\
-            ' sequential: ' + str(self.hasData)   + '\n'\
+            ' sequential: ' + str(self.sequential)+ '\n'\
             '  byteOrder: ' + str(self.byteOrder) + '\n'\
+            '       pdef: ' + str(self.pdef.proj) + '\n'\
             '       xdef: ' + str(self.xdef)      + '\n'\
             '       ydef: ' + str(self.ydef)      + '\n'\
             '       zdef: ' + str(self.zdef)      + '\n'\
             '       tdef: ' + str(self.tdef)      + '\n'\
             '       vdef: ' + str(vdef)
+
+
+
+class PDEF(object):
+    """
+    PDEF class.  Parse necessary info in PDEF.
+    
+    Reference: http://cola.gmu.edu/grads/gadoc/pdef.html
+    """
+    def __init__(self, oneline):
+        """
+        Constructor.
+        
+        Parameters
+        ----------
+        oneline : str
+            The ASCII line of PDEF in ctl file.
+        """
+        if 'nps' in oneline or 'sps' in oneline:
+            token = oneline.split()
+            
+            if len(token) != 8:
+                raise Exception('not enough tokens for PDEF, ' +
+                                'expected 8 but found ' + str(len(token)))
+            
+            self.isize   = int  (token[1]) # size of native grid in x direction
+            self.jsize   = int  (token[2]) # size of native grid in y direction
+            self.proj    =      (token[3]) # type of projection
+            self.ipole   = int  (token[4]) # i-coord of pole ref to ll corner
+            self.jpole   = int  (token[5]) # j-coord of pole ref to ll corner
+            self.lonref  = float(token[6]) # reference longitude
+            self.gridinc = float(token[7]) # distance between gripoints in km
+            
+        elif 'lccr' in oneline or 'lcc' in oneline:
+            token = oneline.split()
+            
+            if len(token) != 13:
+                raise Exception('not enough tokens for PDEF, ' +
+                                'expected 13 but found ' + str(len(token)))
+            
+            self.isize   = int  (token[1]) # size of native grid in x direction
+            self.jsize   = int  (token[2]) # size of native grid in y direction
+            self.proj    =      (token[3]) # type of projection
+            self.latref  = float(token[4]) # ref latitude
+            self.lonref  = float(token[5]) # ref longitude (E>0, W<0)
+            self.iref    = float(token[6]) # i of ref point
+            self.jref    = float(token[7]) # j of ref point
+            self.Struelat= float(token[8]) # S true lat
+            self.Ntruelat= float(token[9]) # N true lat
+            self.slon    = float(token[10]) # standard longitude
+            self.dx      = float(token[11]) # grid X increment in meters
+            self.dy      = float(token[12]) # grid Y increment in meters
+        
+        else:
+            raise Exception('not currently supported PDEF\n' + oneline)
+    
+    def get_projection(self):
+        PROJ = self.proj
+        
+        if   PROJ is None:
+            return ccrs.PlateCarree()
+        elif PROJ in ['lcc', 'lccr']:
+            return ccrs.LambertConformal(
+                      central_latitude   = self.latref,
+                      central_longitude  = self.lonref,
+                      standard_parallels = (self.Struelat, self.Ntruelat),
+                      false_easting  = self.iref * self.dx,
+                      false_northing = self.jref * self.dy)
+        elif PROJ == 'nps':
+            return ccrs.NorthPolarStereo(
+                      central_longitude = self.lonref,
+                      true_scale_latitude = 60) # used by GrADS?
+        elif PROJ == 'sps':
+            return ccrs.SouthPolarStereo(
+                      central_longitude = self.lonref,
+                      true_scale_latitude = -60) # used by GrADS?
+
+    def __str__(self):
+        """
+        Print this class as a string.
+        """
+        return '\n'.join(['%s: %s' % item for item in self.__dict__.items()])
+    
 
 
 
@@ -697,117 +796,11 @@ class CtlVar(object):
 
 
 """
-Some useful functions are defined below
+Some useful functions defined here
 """
-def open_CtlDataset(desfile):
-    """
-    Open a 4D dataset with a descriptor file end with .ctl and
-    return a xarray.Dataset.  This also uses the dask to chunk
-    very large dataset, which is similar to the xarray.open_dataset.
-    
-    Parameters
-    ----------
-    desfile: string
-        Path to the descriptor file end with .ctl or .cts
-    
-    Returns
-    -------
-    dset : xarray.Dataset
-        Dataset object containing all coordinates and variables.
-    """
-
-    if not desfile.endswith('.ctl'):
-        raise Exception('unsupported file, suffix should be .ctl')
-
-    ctl = CtlDescriptor(file=desfile)
-    
-    if ctl.template:
-        tcount = len(ctl.tdef.samples) # number of total time count
-        tcPerf = []                    # number of time count per file
-        
-        for file in ctl.dsetPath:
-            fsize = os.path.getsize(file)
-            
-            if fsize % ctl.tRecLength != 0:
-                raise Exception('incomplete file for ' + file +
-                                '(not multiple of ' + ctl.tRecLength +
-                                ' bytes)')
-            
-            tcPerf.append(fsize // ctl.tRecLength)
-        
-        total_size = sum(tcPerf)
-        
-        if total_size < tcount:
-            raise Exception('no enough files for ' + str(tcount) +
-                            ' time records')
-        
-        # get time record number in each file
-        rem = tcount
-        idx = 0
-        for i, num in enumerate(tcPerf):
-            rem -= num
-            if rem <= 0:
-                idx = i
-                break
-
-        tcPerf_m      = tcPerf[:idx+1]
-        tcPerf_m[idx] = tcPerf[idx   ] + rem
-        
-        # print(ctl.dsetPath)
-        # print(tcPerf)
-        # print(tcPerf_m)
-        
-        binData = __read_template_as_dask(ctl, tcPerf_m)
-        
-    else:
-        expect = ctl.tRecLength * ctl.tdef.length()
-        actual = os.path.getsize(ctl.dsetPath)
-        
-        if expect != actual:
-            raise Exception('expected binary file size: {0}, actual size: {1}'
-                            .format(expect, actual))
-    
-        binData = __read_as_dask(ctl)
-
-    variables = []
-
-    for m, v in enumerate(ctl.vdef):
-        if v.dependZ:
-            da = xr.DataArray(name=v.name, data=binData[m],
-                              dims=['time', 'lev', 'lat', 'lon'],
-                              coords={'time': ctl.tdef.samples[:],
-                                      'lev' : ctl.zdef.samples[:v.zcount],
-                                      'lat' : ctl.ydef.samples[:],
-                                      'lon' : ctl.xdef.samples[:]},
-                              attrs={'comment': v.comment,
-                                     'storage': v.storage})
-        else:
-            t, z, y, x = binData[m].shape
-            da = xr.DataArray(name=v.name,
-                              data=binData[m].reshape((t,y,x)),
-                              dims=['time', 'lat', 'lon'],
-                              coords={'time': ctl.tdef.samples[:],
-                                      'lat' : ctl.ydef.samples[:],
-                                      'lon' : ctl.xdef.samples[:]},
-                              attrs={'comment': v.comment,
-                                     'storage': v.storage})
-
-        variables.append(da)
-
-#    variables = {v.name: (['time','lev','lat','lon'], binData[m])
-#                 for m,v in enumerate(ctl.vdef)}
-
-    dset = xr.merge(variables)
-
-    dset.attrs['title'] = ctl.title
-    dset.attrs['undef'] = ctl.undef
-
-    return dset
-
-
 def GrADStime_to_datetime(gradsTime):
     """
-    Convert GrADS time string e.g., 00:00z01Jan2000 to numpy.datetime64
+    Convert GrADS time string e.g., 00:00z01Jan2000 to datetime
     
     Parameters
     ----------
@@ -883,232 +876,5 @@ def GrADS_increment_to_timedelta64(incre):
 """
 Helper (private) methods are defined below
 """
-def __read_as_dask(dd):
-    """
-    Read binary data and return as a dask array
-    """
-    t, y, x = dd.tdef.length(), dd.ydef.length(), dd.xdef.length()
-
-    totalNum = sum([reduce(lambda x, y:
-                    x*y, (t,v.zcount,y,x)) for v in dd.vdef])
-
-    # print(totalNum * 4.0 / 1024.0 / 1024.0)
-
-    binData = []
-    
-    dtype   = '<f4' if dd.byteOrder == 'little' else '>f4'
-
-    for m, v in enumerate(dd.vdef):
-        if totalNum < (100 * 100 * 100 * 10): # about 40 MB, chunk all
-            # print('small')
-            chunk = (t, v.zcount, y, x)
-            shape = (t, v.zcount, y, x)
-
-            dsk = {(v.name+'_@miniufo', 0, 0, 0, 0):
-                   (__read_var, dd.dsetPath, v, dd.tRecLength, None, None, dtype)}
-
-            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
-                                     dtype=dtype,
-                                     shape=shape))
-
-        elif totalNum > (200 * 100 * 100 * 100): # about 800 MB, chunk 2D slice
-            # print('large')
-            chunk = (1, 1, y, x)
-            shape = (t, v.zcount, y, x)
-
-            dsk = {(v.name+'_@miniufo', l, k, 0, 0):
-                   (__read_var, dd.dsetPath, v, dd.tRecLength, l, k, dtype)
-                   for l in range(t)
-                   for k in range(v.zcount)}
-
-            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
-                                     dtype=dtype,
-                                     shape=shape))
-
-        else: # in between, chunk 3D slice
-            # print('between')
-            chunk = (1, v.zcount, y, x)
-            shape = (t, v.zcount, y, x)
-
-            dsk = {(v.name+'_@miniufo', l, 0, 0, 0):
-                   (__read_var, dd.dsetPath, v, dd.tRecLength, l, None, dtype)
-                   for l in range(t)}
-
-            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
-                                     dtype=dtype,
-                                     shape=shape))
-
-    return binData
 
 
-def __read_template_as_dask(dd, tcPerf):
-    """
-    Read template binary data and return as a dask array
-    """
-    t, y, x = dd.tdef.length(), dd.ydef.length(), dd.xdef.length()
-
-    totalNum = sum([reduce(lambda x, y:
-                    x*y, (tcPerf[0],v.zcount,y,x)) for v in dd.vdef])
-
-    # print(totalNum * 4.0 / 1024.0 / 1024.0)
-
-    binData = []
-    
-    dtype   = '<f4' if dd.byteOrder == 'little' else '>f4'
-
-    for m, v in enumerate(dd.vdef):
-        if totalNum > (200 * 100 * 100 * 100): # about 800 MB, chunk 2D slice
-            # print('large')
-            chunk = (1, 1, y, x)
-            shape = (t, v.zcount, y, x)
-
-            dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), k, 0, 0):
-                   (__read_var, f, v, dd.tRecLength, l, k, dtype)
-                   for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
-                   for l in range(tcPerf[m])
-                   for k in range(v.zcount)}
-
-            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
-                                     dtype=dtype,
-                                     shape=shape))
-
-        else: # in between, chunk 3D slice
-            # print('between')
-            chunk = (1, v.zcount, y, x)
-            shape = (t, v.zcount, y, x)
-
-            dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), 0, 0, 0):
-                   (__read_var, f, v, dd.tRecLength, l, None, dtype)
-                   for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
-                   for l in range(tcPerf[m])}
-
-            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
-                                     dtype=dtype,
-                                     shape=shape))
-
-    return binData
-
-
-def __read_var(file, var, tstride, tstep, zstep, dtype):
-    """
-    Read a variable given the trange.
-
-    Parameters
-    ----------
-    file : str
-        A file from which data are read.
-    var  : CtlVar
-        A variable that need to be read.
-    tstride : int
-        Stride of a single time record.
-    tstep : int
-        T-step to be read, started from 0.  If None, read all t-steps
-    zstep : int
-        Z-step to be read, started from 0.  If None, read all z-steps
-    """
-    # print(var.name+' '+str(tstep)+' '+str(zstep))
-
-    if var.storage == '-1,20':
-        if tstep is None and zstep is None:
-            shape = (var.tcount, var.zcount, var.ycount, var.xcount)
-            pos   = var.strPos
-            return __read_continuous(file, pos, shape, dtype)
-        
-        elif zstep is None and tstep is not None:
-            shape = (1, var.zcount, var.ycount, var.xcount)
-            pos   = var.strPos
-            return __read_continuous(file, pos, shape, dtype)
-        
-        elif tstep is None and zstep is not None:
-            raise Exception('not implemented in -1,20')
-            
-        else:
-            shape = (1, 1, var.ycount, var.xcount)
-            zstri = var.ycount * var.xcount * 4
-            pos   = var.strPos + zstri * zstep
-            return __read_continuous(file, pos, shape, dtype)
-    
-    elif var.storage == '99':
-        if tstep is None and zstep is None:
-            shape = (1, var.zcount, var.ycount, var.xcount)
-            pos   = var.strPos
-            data  = []
-            
-            for l in range(var.tcount):
-                data.append(__read_continuous(file, pos, shape, dtype))
-                pos += tstride
-            
-            return np.concatenate(data)
-        
-        elif zstep is None and tstep is not None:
-            shape = (1, var.zcount, var.ycount, var.xcount)
-            pos   = var.strPos + tstride * tstep
-            data = __read_continuous(file, pos, shape, dtype)
-            
-            return data
-        
-        elif tstep is None and zstep is not None:
-            raise Exception('not implemented in 0,99')
-            
-        else:
-            shape = (1, 1, var.ycount, var.xcount)
-            zstri = var.ycount * var.xcount * 4
-            pos   = var.strPos + tstride * tstep + zstri * zstep
-            return __read_continuous(file, pos, shape, dtype)
-        
-    else:
-        raise Exception('invalid storage ' + var.storage +
-                        ', only "99" or "-1,20" are supported')
-
-
-def __read_continuous(file, offset=0, shape=None, dtype='<f4', use_mmap=True):
-    """
-    Read a block of continuous data into the memory.
-
-    Parameters
-    ----------
-    file  : str
-        A file from which data are read.
-    offset: int
-        An offset where the read is started.
-    shape : tuple
-        A tuple indicate shape of the Array returned.
-    """
-    with open(file, 'rb') as f:
-        if use_mmap:
-            data = np.memmap(f, dtype=dtype, mode='r', offset=offset,
-                             shape=shape, order='C')
-        else:
-            number_of_values = reduce(lambda x, y: x*y, shape)
-            f.seek(offset)
-            data = np.fromfile(f, dtype=dtype, count=number_of_values)
-            data = data.reshape(shape, order='C')
-    
-    data.shape = shape
-    
-    return data
-
-
-
-"""
-Testing codes
-"""
-if __name__=='__main__':
-    content=\
-        "dset ^Model10\n"\
-        "*ccccccccccccccccc\n"\
-        "title 10-deg resolution model\n"\
-        "undef -9.99e8\n"\
-        "xdef 36 linear   0 10\n"\
-        "ydef 19 linear -90 10\n"\
-        "zdef   1 linear 0 1\n"\
-        "tdef   1 linear 00z01Jan2000 1dy\n"\
-        "vars 1\n"\
-        "test 1 99 test variable\n"\
-        "endvars\n"
-
-    print(CtlDescriptor(content=content))
-
-    for i in range(6):
-        print(CtlDescriptor(file='../ctls/test'+str(i+1)+'.ctl'))
-        print('\n')
