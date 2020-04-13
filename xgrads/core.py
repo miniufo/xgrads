@@ -26,6 +26,7 @@ class CtlDescriptor(object):
         indxPath: index file (for GRIB file)
         stnmPath: station map file (for station file)
         
+        pdef: projection-definition
         tdef: t-definition
         zdef: z-definition
         ydef: y-definition
@@ -69,6 +70,7 @@ class CtlDescriptor(object):
         """
         self.vcount = 0
         
+        self.pdef = None
         self.tdef = None
         self.zdef = None
         self.ydef = None
@@ -114,7 +116,7 @@ class CtlDescriptor(object):
                         line.startswith('index') or
                         line.startswith('stnmap')) and '^' in line:
                         fileContent[i] = line.replace('^',
-                                           os.path.dirname(abspath))
+                                           os.path.dirname(abspath) + '/')
             self.descPath=abspath
         
         elif kwargs.get('content'):
@@ -574,6 +576,7 @@ class CtlDescriptor(object):
         Print this class as a string.
         """
         vdef = np.array(self.vdef)
+        pdef = self.pdef.proj if self.pdef is not None else ''
         
         return \
             '   dsetPath: ' + str(self.dsetPath)  + '\n'\
@@ -585,16 +588,16 @@ class CtlDescriptor(object):
             '       zrev: ' + str(self.zrev)      + '\n'\
             '       yrev: ' + str(self.yrev)      + '\n'\
             '      dtype: ' + str(self.dtype)     + '\n'\
-            '   template: ' + str(self.template) + '\n'\
+            '   template: ' + str(self.template)  + '\n'\
             '  periodicX: ' + str(self.periodicX) + '\n'\
             ' cal365Days: ' + str(self.cal365Days)+ '\n'\
             ' sequential: ' + str(self.sequential)+ '\n'\
             '  byteOrder: ' + str(self.byteOrder) + '\n'\
-            '       pdef: ' + str(self.pdef.proj) + '\n'\
             '       xdef: ' + str(self.xdef)      + '\n'\
             '       ydef: ' + str(self.ydef)      + '\n'\
             '       zdef: ' + str(self.zdef)      + '\n'\
             '       tdef: ' + str(self.tdef)      + '\n'\
+            '       pdef: ' + str(pdef)           + '\n'\
             '       vdef: ' + str(vdef)
 
 
