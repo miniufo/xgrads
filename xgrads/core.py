@@ -115,8 +115,13 @@ class CtlDescriptor(object):
                     if (line.startswith('dset') or
                         line.startswith('index') or
                         line.startswith('stnmap')) and '^' in line:
-                        fileContent[i] = line.replace('^',
-                                           os.path.dirname(abspath) + '/')
+                        dirname = os.path.dirname(abspath)
+                        if dirname[-1] != '/':
+                            fileContent[i] = line.replace('^',
+                                               os.path.dirname(abspath) + '/')
+                        else:
+                            fileContent[i] = line.replace('^',
+                                               os.path.dirname(abspath))
             self.descPath=abspath
         
         elif kwargs.get('content'):
@@ -180,8 +185,7 @@ class CtlDescriptor(object):
             self.zdef = np.flip(self.zdef)
     
     def _processDSets(self, dpath_str):
-        strTim = self.tdef.samples[0]
-        incre  = self.incre
+        times = self.tdef.samples
         
         strPos = dpath_str.index('%')
         endPos = len(dpath_str) - dpath_str[::-1].index('%') + 2
@@ -195,8 +199,9 @@ class CtlDescriptor(object):
         fmt = ''.join(tokens)
         
         fileList = []
-        for l in range(len(self.tdef.samples)):
-            part = (strTim + incre * l).item().strftime(fmt)
+        
+        for l in range(len(times)):
+            part = times[l].item().strftime(fmt)
             
             fname = dpath_str[:strPos] + part + dpath_str[endPos:]
             

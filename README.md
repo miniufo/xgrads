@@ -1,6 +1,6 @@
 # xgrads
 
-![3D plot](./pics/3D.png)
+![3D plot](https://raw.githubusercontent.com/miniufo/xgrads/master/pics/3D.png)
 
 
 ## 1. Introduction
@@ -9,8 +9,26 @@ The Grid Analysis and Display System ([GrADS](http://cola.gmu.edu/grads/) or [Op
 This python package [`xgrads`](https://github.com/miniufo/xgrads) is designed for parse and read the `.ctl` file commonly used by [GrADS](http://cola.gmu.edu/grads/).  Right now it can parse various kinds of `.ctl` files.  However, only the commonly used raw binary 4D datasets can be read using [`dask`](https://dask.org/) and return as a [`xarray.Dataset`](http://xarray.pydata.org/en/stable/)  Other types of binary data, like `dtype` is `station` or`grib`, may be supported in the future.
 
 ---
-## 2. Examples
-### 2.1 Parse a `.ctl` file
+## 2. How to install
+**Requirements**
+`xgrads` is developed under the environment with `xarray` (=version 0.15.0), `dask` (=version 2.11.0), and `numpy` (=version 1.15.4).  Older versions of these packages are not well tested.
+
+**Install via pip**
+```
+pip install xgrads
+```
+
+**Install from github**
+```
+git clone https://github.com/miniufo/xgrads.git
+cd xgrads
+python setup.py install
+```
+
+
+---
+## 3. Examples
+### 3.1 Parse a `.ctl` file
 Parsing a `.ctl` file is pretty simple using the following code:
 ```python
 from xgrads import CtlDescriptor
@@ -43,7 +61,7 @@ print(ctl)
 ```
 ---
 
-### 2.2 Read binary data into a `xarray.Dataset`
+### 3.2 Read binary data into a `xarray.Dataset`
 Reading a `.ctl` related binary data file is also pretty simple using the following code:
 ```python
 from xgrads import open_CtlDataset
@@ -58,7 +76,7 @@ Then you have the `dset` as a `xarray.Dataset`.  This is similar to [`xarray.ope
 
 ---
 
-### 2.3 Convert a GrADS dataset to a NetCDF dataset
+### 3.3 Convert a GrADS dataset to a NetCDF dataset
 With the above functionality, it is easy to convert a `.ctl` ([GrADS](http://cola.gmu.edu/grads/)) dataset to a `.nc` ([NetCDF](https://www.unidata.ucar.edu/software/netcdf/docs/file_structure_and_performance.html)) dataset:
 ```python
 from xgrads import open_CtlDataset
