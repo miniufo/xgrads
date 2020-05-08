@@ -8,12 +8,27 @@ Copyright 2018. All rights reserved. Use is subject to license terms.
 from xgrads.xgrads import open_CtlDataset
 import xarray as xr
 
-# dset = open_CtlDataset('D:/Data/ULFI/output/2017101712_1721.ctl')
-# dset = open_CtlDataset('D:/Data/Elena/ElenaIsenTest.ctl')
-# dset = open_CtlDataset('D:/Data/ERAInterim/Keff/PV/KeffUninterp.ctl')
-# dset = open_CtlDataset('D:/Data/ERAInterim/Keff/PV/PV.ctl')
-# dset = open_CtlDataset('D:/Data/Haima/HaimaPTOrig.ctl')
-# dset = open_CtlDataset('D:/Data/MITgcm/flt/float/Stat.ctl')
+dset = open_CtlDataset('D:/Data/ULFI/output/2017101712_1721.ctl')
+dset.sst[-1].where(dset.sst[-1]!=-999).plot()
+
+#%%
+dset = open_CtlDataset('D:/Data/ERAInterim/ElenaIsen/ElenaTest.ctl')
+dset.ut[-1].plot()
+
+#%%
+dset = open_CtlDataset('D:/Data/ERAInterim/Keff/PV/KeffUninterp.ctl')
+
+#%%
+dset = open_CtlDataset('D:/Data/ERAInterim/Keff/PV/PV.ctl')
+
+
+#%%
+dset = open_CtlDataset('D:/Data/Haima/HaimaPTOrig.ctl')
+
+#%%
+dset = open_CtlDataset('D:/Data/MITgcm/flt/float/Stat.ctl')
+
+#%%
 dset = open_CtlDataset('./xgrads/ctls/test8.ctl')
 
 

@@ -50,7 +50,7 @@ def open_CtlDataset(desfile, returnctl=False):
             
             if fsize % ctl.tRecLength != 0:
                 raise Exception('incomplete file for ' + file +
-                                '(not multiple of ' + ctl.tRecLength +
+                                ' (not multiple of ' + str(ctl.tRecLength) +
                                 ' bytes)')
             
             tcPerf.append(fsize // ctl.tRecLength)
@@ -180,6 +180,9 @@ def __read_as_dask(dd):
 
     totalNum = sum([reduce(lambda x, y:
                     x*y, (t,v.zcount,y,x)) for v in dd.vdef])
+       
+    if dd.sequential:
+        sequentialSize = x * y + 2
 
     # print(totalNum * 4.0 / 1024.0 / 1024.0)
 
@@ -192,9 +195,15 @@ def __read_as_dask(dd):
             # print('small')
             chunk = (t, v.zcount, y, x)
             shape = (t, v.zcount, y, x)
-
-            dsk = {(v.name+'_@miniufo', 0, 0, 0, 0):
-                   (__read_var, dd.dsetPath, v, dd.tRecLength, None, None, dtype)}
+            
+            if dd.sequential:
+                dsk = {(v.name+'_@miniufo', 0, 0, 0, 0):
+                       (__read_var, dd.dsetPath, v, dd.tRecLength,
+                        None, None, dtype, sequentialSize)}
+            else:
+                dsk = {(v.name+'_@miniufo', 0, 0, 0, 0):
+                       (__read_var, dd.dsetPath, v, dd.tRecLength,
+                        None, None, dtype, -1)}
 
             binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
                                      dtype=dtype,
@@ -204,11 +213,19 @@ def __read_as_dask(dd):
             # print('large')
             chunk = (1, 1, y, x)
             shape = (t, v.zcount, y, x)
-
-            dsk = {(v.name+'_@miniufo', l, k, 0, 0):
-                   (__read_var, dd.dsetPath, v, dd.tRecLength, l, k, dtype)
-                   for l in range(t)
-                   for k in range(v.zcount)}
+            
+            if dd.sequential:
+                dsk = {(v.name+'_@miniufo', l, k, 0, 0):
+                       (__read_var, dd.dsetPath, v, dd.tRecLength,
+                        l, k, dtype, sequentialSize)
+                       for l in range(t)
+                       for k in range(v.zcount)}
+            else:
+                dsk = {(v.name+'_@miniufo', l, k, 0, 0):
+                       (__read_var, dd.dsetPath, v, dd.tRecLength,
+                        l, k, dtype, -1)
+                       for l in range(t)
+                       for k in range(v.zcount)}
 
             binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
                                      dtype=dtype,
@@ -218,10 +235,17 @@ def __read_as_dask(dd):
             # print('between')
             chunk = (1, v.zcount, y, x)
             shape = (t, v.zcount, y, x)
-
-            dsk = {(v.name+'_@miniufo', l, 0, 0, 0):
-                   (__read_var, dd.dsetPath, v, dd.tRecLength, l, None, dtype)
-                   for l in range(t)}
+            
+            if dd.sequential:
+                dsk = {(v.name+'_@miniufo', l, 0, 0, 0):
+                       (__read_var, dd.dsetPath, v, dd.tRecLength,
+                        l, None, dtype, sequentialSize)
+                       for l in range(t)}
+            else:
+                dsk = {(v.name+'_@miniufo', l, 0, 0, 0):
+                       (__read_var, dd.dsetPath, v, dd.tRecLength,
+                        l, None, dtype, -1)
+                       for l in range(t)}
 
             binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
                                      dtype=dtype,
@@ -238,6 +262,9 @@ def __read_template_as_dask(dd, tcPerf):
 
     totalNum = sum([reduce(lambda x, y:
                     x*y, (tcPerf[0],v.zcount,y,x)) for v in dd.vdef])
+       
+    if dd.sequential:
+        sequentialSize = x * y + 2
 
     # print(totalNum * 4.0 / 1024.0 / 1024.0)
 
@@ -250,12 +277,21 @@ def __read_template_as_dask(dd, tcPerf):
             # print('large')
             chunk = (1, 1, y, x)
             shape = (t, v.zcount, y, x)
-
-            dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), k, 0, 0):
-                   (__read_var, f, v, dd.tRecLength, l, k, dtype)
-                   for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
-                   for l in range(tcPerf[m])
-                   for k in range(v.zcount)}
+            
+            if dd.sequential:
+                dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), k, 0, 0):
+                       (__read_var, f, v, dd.tRecLength,
+                        l, k, dtype, sequentialSize)
+                       for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
+                       for l in range(tcPerf[m])
+                       for k in range(v.zcount)}
+            else:
+                dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), k, 0, 0):
+                       (__read_var, f, v, dd.tRecLength,
+                        l, k, dtype, -1)
+                       for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
+                       for l in range(tcPerf[m])
+                       for k in range(v.zcount)}
 
             binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
                                      dtype=dtype,
@@ -266,10 +302,18 @@ def __read_template_as_dask(dd, tcPerf):
             chunk = (1, v.zcount, y, x)
             shape = (t, v.zcount, y, x)
 
-            dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), 0, 0, 0):
-                   (__read_var, f, v, dd.tRecLength, l, None, dtype)
-                   for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
-                   for l in range(tcPerf[m])}
+            if dd.sequential:
+                dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), 0, 0, 0):
+                       (__read_var, f, v, dd.tRecLength,
+                        l, None, dtype, sequentialSize)
+                       for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
+                       for l in range(tcPerf[m])}
+            else:
+                dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), 0, 0, 0):
+                       (__read_var, f, v, dd.tRecLength,
+                        l, None, dtype, -1)
+                       for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
+                       for l in range(tcPerf[m])}
 
             binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
                                      dtype=dtype,
@@ -278,7 +322,7 @@ def __read_template_as_dask(dd, tcPerf):
     return binData
 
 
-def __read_var(file, var, tstride, tstep, zstep, dtype):
+def __read_var(file, var, tstride, tstep, zstep, dtype, sequentialSize=-1):
     """
     Read a variable given the trange.
 
@@ -294,19 +338,32 @@ def __read_var(file, var, tstride, tstep, zstep, dtype):
         T-step to be read, started from 0.  If None, read all t-steps
     zstep : int
         Z-step to be read, started from 0.  If None, read all z-steps
+    sequentialSize : int
+        Size of the sequential block (= y * x).  Default of -1 means
+        non-sequential storage.
     """
     # print(var.name+' '+str(tstep)+' '+str(zstep)+' '+str(var.strPos))
 
     if var.storage == '-1,20':
         if tstep is None and zstep is None:
             shape = (var.tcount, var.zcount, var.ycount, var.xcount)
+            if sequentialSize != -1:
+                seqShp = (var.tcount, var.zcount, sequentialSize)
+            else:
+                seqShp = shape
             pos   = var.strPos
-            return __read_continuous(file, pos, shape, dtype)
+            return __read_continuous(file, pos, shape, dtype,
+                                     sequentialShape=seqShp)
         
         elif zstep is None and tstep is not None:
             shape = (1, var.zcount, var.ycount, var.xcount)
+            if sequentialSize != -1:
+                seqShp = (1, var.zcount, sequentialSize)
+            else:
+                seqShp = shape
             pos   = var.strPos
-            return __read_continuous(file, pos, shape, dtype)
+            return __read_continuous(file, pos, shape, dtype,
+                                     sequentialShape=seqShp)
         
         elif tstep is None and zstep is not None:
             raise Exception('not implemented in -1,20')
@@ -314,25 +371,41 @@ def __read_var(file, var, tstride, tstep, zstep, dtype):
         else:
             shape = (1, 1, var.ycount, var.xcount)
             zstri = var.ycount * var.xcount * 4
+            if sequentialSize != -1:
+                seqShp = (1, 1, sequentialSize)
+                zstri += 8
+            else:
+                seqShp = shape
             pos   = var.strPos + zstri * zstep
-            return __read_continuous(file, pos, shape, dtype)
+            return __read_continuous(file, pos, shape, dtype,
+                                     sequentialShape=seqShp)
     
     elif var.storage == '99' or var.storage == '0':
         if tstep is None and zstep is None:
             shape = (1, var.zcount, var.ycount, var.xcount)
+            if sequentialSize != -1:
+                seqShp = (1, var.zcount, sequentialSize)
+            else:
+                seqShp = shape
             pos   = var.strPos
             data  = []
             
             for l in range(var.tcount):
-                data.append(__read_continuous(file, pos, shape, dtype))
+                data.append(__read_continuous(file, pos, shape, dtype,
+                                              sequentialShape=seqShp))
                 pos += tstride
             
             return np.concatenate(data)
         
         elif zstep is None and tstep is not None:
             shape = (1, var.zcount, var.ycount, var.xcount)
+            if sequentialSize != -1:
+                seqShp = (1, var.zcount, sequentialSize)
+            else:
+                seqShp = shape
             pos   = var.strPos + tstride * tstep
-            data = __read_continuous(file, pos, shape, dtype)
+            data = __read_continuous(file, pos, shape, dtype,
+                                     sequentialShape=seqShp)
             
             return data
         
@@ -342,15 +415,22 @@ def __read_var(file, var, tstride, tstep, zstep, dtype):
         else:
             shape = (1, 1, var.ycount, var.xcount)
             zstri = var.ycount * var.xcount * 4
+            if sequentialSize != -1:
+                seqShp = (1, 1, sequentialSize)
+                zstri += 8
+            else:
+                seqShp = shape
             pos   = var.strPos + tstride * tstep + zstri * zstep
-            return __read_continuous(file, pos, shape, dtype)
+            return __read_continuous(file, pos, shape, dtype,
+                                     sequentialShape=seqShp)
         
     else:
         raise Exception('invalid storage ' + var.storage +
                         ', only "99" or "-1,20" are supported')
 
 
-def __read_continuous(file, offset=0, shape=None, dtype='<f4', use_mmap=True):
+def __read_continuous(file, offset=0, shape=None, dtype='<f4',
+                      use_mmap=True, sequentialShape=None):
     """
     Read a block of continuous data into the memory.
 
@@ -362,16 +442,24 @@ def __read_continuous(file, offset=0, shape=None, dtype='<f4', use_mmap=True):
         An offset where the read is started.
     shape : tuple
         A tuple indicate shape of the Array returned.
+    sequentialShape : tuple
+        If in Fortran-sequential storage, provide a shape including the
+        beginning and the end numbers.
     """
     with open(file, 'rb') as f:
         if use_mmap:
             data = np.memmap(f, dtype=dtype, mode='r', offset=offset,
-                             shape=shape, order='C')
+                             shape=sequentialShape, order='C')
         else:
-            number_of_values = reduce(lambda x, y: x*y, shape)
+            number_of_values = reduce(lambda x, y: x*y, sequentialShape)
+            
             f.seek(offset)
             data = np.fromfile(f, dtype=dtype, count=number_of_values)
-            data = data.reshape(shape, order='C')
+            
+    if sequentialShape != shape:
+        data = data.reshape((shape[0],shape[1],-1))[:,:,1:-1]
+    
+    data = data.reshape(shape, order='C')
     
     data.shape = shape
     

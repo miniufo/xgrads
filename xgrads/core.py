@@ -360,6 +360,10 @@ class CtlDescriptor(object):
             x = self.xdef.length() if self.pdef is None else self.pdef.isize
         
             self.zRecLength = x * y * 4
+            
+            # add two bytes at the beginning and the end
+            if self.sequential:
+                self.zRecLength += 8
         
         tokens = oneline.split()
         vnum   = int(tokens[1])
