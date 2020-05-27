@@ -52,12 +52,14 @@ class CtlDescriptor(object):
         zRecLength : record length of a single horizontal slice
         tRecLength : record length of a single time (including all variables)
     """
-    def __init__(self, **kwargs):
+    def __init__(self, encoding='GBK', **kwargs):
         """
         Constructor.
         
         Parameters
         ----------
+        encoding : str
+            Encoding for the ctl file contents e.g., ['GBK', 'UTF-8'].
         file = fileName : str
             The ctl path/file name.
         content = content: str
@@ -106,15 +108,17 @@ class CtlDescriptor(object):
             if os.path.getsize(abspath) / (1024.0*1024.0) > 2:
                 raise Exception('ctl file is too large (> 2 MB)')
             
-            with open(abspath, 'r') as f:
+            with open(abspath, 'r', encoding=encoding) as f:
                 fileContent = f.readlines()
                 
-                fileContent = [line.lower() for line in fileContent]
+                # fileContent = [line.lower() if not line.startswith('dset')
+                #                else line for line in fileContent]
                 
                 for i, line in enumerate(fileContent):
-                    if (line.startswith('dset') or
-                        line.startswith('index') or
-                        line.startswith('stnmap')) and '^' in line:
+                    llower = line.lower()
+                    if (llower.startswith('dset') or
+                        llower.startswith('index') or
+                        llower.startswith('stnmap')) and '^' in line:
                         dirname = os.path.dirname(abspath)
                         if dirname[-1] != '/':
                             fileContent[i] = line.replace('^',
@@ -143,34 +147,34 @@ class CtlDescriptor(object):
     
     def parse(self, fileContent):
         for oneline in fileContent:
-            if   oneline.startswith('dset'):
+            if   oneline.lower().startswith('dset'):
                 dpath_str = oneline.split()[1]
-            elif oneline.startswith('index'):
+            elif oneline.lower().startswith('index'):
                 self._processIndex(oneline)
-            elif oneline.startswith('stnmap'):
+            elif oneline.lower().startswith('stnmap'):
                 self._processStnmap(oneline)
-            elif oneline.startswith('dtype'):
+            elif oneline.lower().startswith('dtype'):
                 self.dtype = oneline[5:].strip()
-            elif oneline.startswith('pdef'):
+            elif oneline.lower().startswith('pdef'):
                 self._processPDEF(oneline)
-            elif oneline.startswith('title'):
+            elif oneline.lower().startswith('title'):
                 self.title = oneline.split()[1].strip()
-            elif oneline.startswith('undef'):
+            elif oneline.lower().startswith('undef'):
                 self.undef = float(oneline.split()[1].strip())
-            elif oneline.startswith('options'):
+            elif oneline.lower().startswith('options'):
                 self._processOptions(oneline)
-            elif oneline.startswith('byteswapped'):
+            elif oneline.lower().startswith('byteswapped'):
                 self.byteOrder  = 'big' \
                     if sys.byteorder == 'little' else 'little'
-            elif oneline.startswith('xdef'):
+            elif oneline.lower().startswith('xdef'):
                 self._processXDef(oneline, fileContent)
-            elif oneline.startswith('ydef'):
+            elif oneline.lower().startswith('ydef'):
                 self._processYDef(oneline,fileContent)
-            elif oneline.startswith('zdef'):
+            elif oneline.lower().startswith('zdef'):
                 self._processZDef(oneline, fileContent)
-            elif oneline.startswith('tdef'):
+            elif oneline.lower().startswith('tdef'):
                 self._processTDef(oneline)
-            elif oneline.startswith('vars'):
+            elif oneline.lower().startswith('vars'):
                 self._processVars(oneline, fileContent)
         
         if self.template:
@@ -187,7 +191,11 @@ class CtlDescriptor(object):
     def _processDSets(self, dpath_str):
         times = self.tdef.samples
         
-        strPos = dpath_str.index('%')
+        strPos = dpath_str.find('%')
+        
+        if strPos == -1:
+            raise Exception('template is used in ctl but no % in dset')
+        
         endPos = len(dpath_str) - dpath_str[::-1].index('%') + 2
         
         template = dpath_str[strPos:endPos]
@@ -233,17 +241,19 @@ class CtlDescriptor(object):
         self.pdef = PDEF(oneline)
     
     def _processOptions(self, oneline):
-        if 'yrev'             in oneline: self.yrev       = True
-        if 'zrev'             in oneline: self.zrev       = True
-        if 'template'         in oneline: self.template   = True
-        if 'sequential'       in oneline: self.sequential = True
-        if '365_day_calendar' in oneline: self.cal365Days = True
-        if 'big_endian'       in oneline: self.byteOrder  = 'big'
-        if 'byteswapped'      in oneline: self.byteOrder  = \
+        lineLower = oneline.lower()
+        
+        if 'yrev'             in lineLower: self.yrev       = True
+        if 'zrev'             in lineLower: self.zrev       = True
+        if 'template'         in lineLower: self.template   = True
+        if 'sequential'       in lineLower: self.sequential = True
+        if '365_day_calendar' in lineLower: self.cal365Days = True
+        if 'big_endian'       in lineLower: self.byteOrder  = 'big'
+        if 'byteswapped'      in lineLower: self.byteOrder  = \
             'big' if sys.byteorder == 'little' else 'little'
     
     def _processXDef(self, oneline, fileContent):
-        tokens = oneline.split()
+        tokens = oneline.lower().split()
         xnum   = int(tokens[1])
         
         if   tokens[2] == 'linear': xlnr = True
@@ -275,7 +285,7 @@ class CtlDescriptor(object):
         self.periodicX = self.xdef.isPeriodic(360)
 
     def _processYDef(self, oneline, fileContent):
-        tokens = oneline.split()
+        tokens = oneline.lower().split()
         ynum   = int(tokens[1])
         
         if   tokens[2] == 'linear': ylnr = True
@@ -306,7 +316,7 @@ class CtlDescriptor(object):
             self.ydef = Coordinate('ydef', np.array(values))
     
     def _processZDef(self, oneline, fileContent):
-        tokens = oneline.split()
+        tokens = oneline.lower().split()
         znum   = int(tokens[1])
         
         if   tokens[2] == 'linear': zlnr = True
@@ -337,7 +347,7 @@ class CtlDescriptor(object):
             self.zdef = Coordinate('zdef', np.array(values))
 
     def _processTDef(self, oneline):
-        tokens = oneline.split()
+        tokens = oneline.lower().split()
         tnum   = int(tokens[1])
 
         if tokens[2]!='linear':
@@ -419,7 +429,7 @@ class CtlDescriptor(object):
         
         self.tRecLength = self.zRecLength * self.totalZCount
         
-        if fileContent[start + vnum].strip() != 'endvars':
+        if fileContent[start + vnum].strip().lower() != 'endvars':
             raise Exception('endvars is expected')
 
     def _get_template_format(self, part):

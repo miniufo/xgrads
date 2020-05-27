@@ -9,13 +9,74 @@ import os
 import numpy as np
 import xarray as xr
 import dask.array as dsa
+from dask.base import tokenize
+from glob import glob
+from pathlib import Path
 from .core import CtlDescriptor
 from functools import reduce
 
 """
 IO related functions here
 """
-def open_CtlDataset(desfile, returnctl=False):
+def open_mfdataset(paths, parallel=False, encoding='GBK'):
+    """
+    Open multiple ctl files as a single dataset.
+
+    Parameters
+    ----------
+    paths : str or sequence
+        Either a string glob in the form ``"path/to/my/files/*.ctl"`` or an
+        explicit list of files to open. Paths can be given as strings or as
+        pathlib Paths.
+    parallel : bool, optional
+        If True, the open and preprocess steps of this function will be
+        performed in parallel using ``dask.delayed``. Default is False.
+    encoding : str
+        Encoding for the ctl file content e.g., ['GBK', 'UTF-8'].
+
+    Returns
+    -------
+    xarray.Dataset
+
+    Notes
+    -----
+    ``open_mfdataset`` opens files with read-only access. When you modify values
+    of a Dataset, even one linked to files on disk, only the in-memory copy you
+    are manipulating in xarray is modified: the original file on disk is never
+    touched.
+    """
+    if isinstance(paths, str):
+        paths = sorted(glob(paths))
+    else:
+        paths = [str(p) if isinstance(p, Path) else p for p in paths]
+
+    if not paths:
+        raise OSError("no files to open")
+
+    if parallel:
+        import dask
+
+        # wrap the open_dataset
+        open_ = dask.delayed(open_CtlDataset)
+    else:
+        open_ = open_CtlDataset
+    
+    datasets = [open_(p, encoding=encoding) for p in paths]
+
+    if parallel:
+        # calling compute here will return the datasets/file_objs lists,
+        # the underlying datasets will still be stored as dask arrays
+        datasets = dask.compute(datasets)
+        
+        return xr.concat(datasets[0], dim='time')
+    
+    combined = xr.concat(datasets, dim='time')
+    
+    return combined
+
+
+
+def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
     """
     Open a 4D dataset with a descriptor file end with .ctl and
     return a xarray.Dataset.  This also uses the dask to chunk
@@ -35,11 +96,10 @@ def open_CtlDataset(desfile, returnctl=False):
     ctl : xgrads.CtlDescriptor
         Ctl descriptor file.
     """
-
     if not desfile.endswith('.ctl'):
         raise Exception('unsupported file, suffix should be .ctl')
 
-    ctl = CtlDescriptor(file=desfile)
+    ctl = CtlDescriptor(encoding=encoding, file=desfile)
     
     if ctl.template:
         tcount = len(ctl.tdef.samples) # number of total time count
@@ -180,9 +240,11 @@ def __read_as_dask(dd):
 
     totalNum = sum([reduce(lambda x, y:
                     x*y, (t,v.zcount,y,x)) for v in dd.vdef])
-       
+    
     if dd.sequential:
         sequentialSize = x * y + 2
+    else:
+        sequentialSize = -1
 
     # print(totalNum * 4.0 / 1024.0 / 1024.0)
 
@@ -191,65 +253,46 @@ def __read_as_dask(dd):
     dtype   = '<f4' if dd.byteOrder == 'little' else '>f4'
 
     for m, v in enumerate(dd.vdef):
+        name = '@miniufo_' + tokenize(v, m)
+        
         if totalNum < (100 * 100 * 100 * 10): # about 40 MB, chunk all
             # print('small')
             chunk = (t, v.zcount, y, x)
             shape = (t, v.zcount, y, x)
             
-            if dd.sequential:
-                dsk = {(v.name+'_@miniufo', 0, 0, 0, 0):
-                       (__read_var, dd.dsetPath, v, dd.tRecLength,
-                        None, None, dtype, sequentialSize)}
-            else:
-                dsk = {(v.name+'_@miniufo', 0, 0, 0, 0):
-                       (__read_var, dd.dsetPath, v, dd.tRecLength,
-                        None, None, dtype, -1)}
+            dsk = {(name, 0, 0, 0, 0):
+                   (__read_var, dd.dsetPath, v, dd.tRecLength,
+                    None, None, dtype, sequentialSize)}
 
-            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
-                                     dtype=dtype,
-                                     shape=shape))
+            binData.append(dsa.Array(dsk, name, chunk,
+                                     dtype=dtype, shape=shape))
 
         elif totalNum > (200 * 100 * 100 * 100): # about 800 MB, chunk 2D slice
             # print('large')
             chunk = (1, 1, y, x)
             shape = (t, v.zcount, y, x)
             
-            if dd.sequential:
-                dsk = {(v.name+'_@miniufo', l, k, 0, 0):
-                       (__read_var, dd.dsetPath, v, dd.tRecLength,
-                        l, k, dtype, sequentialSize)
-                       for l in range(t)
-                       for k in range(v.zcount)}
-            else:
-                dsk = {(v.name+'_@miniufo', l, k, 0, 0):
-                       (__read_var, dd.dsetPath, v, dd.tRecLength,
-                        l, k, dtype, -1)
-                       for l in range(t)
-                       for k in range(v.zcount)}
+            dsk = {(name, l, k, 0, 0):
+                   (__read_var, dd.dsetPath, v, dd.tRecLength,
+                    l, k, dtype, sequentialSize)
+                   for l in range(t)
+                   for k in range(v.zcount)}
 
-            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
-                                     dtype=dtype,
-                                     shape=shape))
+            binData.append(dsa.Array(dsk, name, chunk,
+                                     dtype=dtype, shape=shape))
 
         else: # in between, chunk 3D slice
             # print('between')
             chunk = (1, v.zcount, y, x)
             shape = (t, v.zcount, y, x)
             
-            if dd.sequential:
-                dsk = {(v.name+'_@miniufo', l, 0, 0, 0):
-                       (__read_var, dd.dsetPath, v, dd.tRecLength,
-                        l, None, dtype, sequentialSize)
-                       for l in range(t)}
-            else:
-                dsk = {(v.name+'_@miniufo', l, 0, 0, 0):
-                       (__read_var, dd.dsetPath, v, dd.tRecLength,
-                        l, None, dtype, -1)
-                       for l in range(t)}
+            dsk = {(name, l, 0, 0, 0):
+                   (__read_var, dd.dsetPath, v, dd.tRecLength,
+                    l, None, dtype, sequentialSize)
+                   for l in range(t)}
 
-            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
-                                     dtype=dtype,
-                                     shape=shape))
+            binData.append(dsa.Array(dsk, name, chunk,
+                                     dtype=dtype, shape=shape))
 
     return binData
 
@@ -265,6 +308,8 @@ def __read_template_as_dask(dd, tcPerf):
        
     if dd.sequential:
         sequentialSize = x * y + 2
+    else:
+        sequentialSize = -1
 
     # print(totalNum * 4.0 / 1024.0 / 1024.0)
 
@@ -273,51 +318,36 @@ def __read_template_as_dask(dd, tcPerf):
     dtype   = '<f4' if dd.byteOrder == 'little' else '>f4'
 
     for m, v in enumerate(dd.vdef):
+        name = '@miniufo_' + tokenize(v, m)
+        
         if totalNum > (200 * 100 * 100 * 100): # about 800 MB, chunk 2D slice
             # print('large')
             chunk = (1, 1, y, x)
             shape = (t, v.zcount, y, x)
             
-            if dd.sequential:
-                dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), k, 0, 0):
-                       (__read_var, f, v, dd.tRecLength,
-                        l, k, dtype, sequentialSize)
-                       for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
-                       for l in range(tcPerf[m])
-                       for k in range(v.zcount)}
-            else:
-                dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), k, 0, 0):
-                       (__read_var, f, v, dd.tRecLength,
-                        l, k, dtype, -1)
-                       for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
-                       for l in range(tcPerf[m])
-                       for k in range(v.zcount)}
+            dsk = {(name, l + sum(tcPerf[:m]), k, 0, 0):
+                   (__read_var, f, v, dd.tRecLength,
+                    l, k, dtype, sequentialSize)
+                   for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
+                   for l in range(tcPerf[m])
+                   for k in range(v.zcount)}
 
-            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
-                                     dtype=dtype,
-                                     shape=shape))
+            binData.append(dsa.Array(dsk, name, chunk,
+                                     dtype=dtype, shape=shape))
 
         else: # in between, chunk 3D slice
             # print('between')
             chunk = (1, v.zcount, y, x)
             shape = (t, v.zcount, y, x)
+            
+            dsk = {(name, l + sum(tcPerf[:m]), 0, 0, 0):
+                   (__read_var, f, v, dd.tRecLength,
+                    l, None, dtype, sequentialSize)
+                   for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
+                   for l in range(tcPerf[m])}
 
-            if dd.sequential:
-                dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), 0, 0, 0):
-                       (__read_var, f, v, dd.tRecLength,
-                        l, None, dtype, sequentialSize)
-                       for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
-                       for l in range(tcPerf[m])}
-            else:
-                dsk = {(v.name+'_@miniufo', l + sum(tcPerf[:m]), 0, 0, 0):
-                       (__read_var, f, v, dd.tRecLength,
-                        l, None, dtype, -1)
-                       for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
-                       for l in range(tcPerf[m])}
-
-            binData.append(dsa.Array(dsk, v.name+'_@miniufo', chunk,
-                                     dtype=dtype,
-                                     shape=shape))
+            binData.append(dsa.Array(dsk, name, chunk,
+                                     dtype=dtype, shape=shape))
 
     return binData
 

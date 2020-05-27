@@ -23,6 +23,8 @@ content=\
 
 print(CtlDescriptor(content=content))
 
+print(CtlDescriptor(encoding='UTF-8', file='./xgrads/ctls/test0.ctl'))
+
 for i in range(10):
     print(CtlDescriptor(file='./xgrads/ctls/test'+str(i+1)+'.ctl'))
     print('\n')
