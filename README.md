@@ -74,6 +74,17 @@ print(dset)
 
 Then you have the `dset` as a `xarray.Dataset`.  This is similar to [`xarray.open_dataset`](http://xarray.pydata.org/en/stable/generated/xarray.open_dataset.html) that use [`dask`](https://dask.org/) to chunk (buffer) parts of the whole dataset in physical memory if the whole dataset is too large to fit in.
 
+If there are many `.ctl` files in a folder, we can also open all of them in a single call of `open_mfdataset` as:
+```python
+from xgrads import open_mfDataset
+
+dset = open_mfDataset('./folder/*.ctl')
+
+# print all the info in ctl file
+print(dset)
+```
+assuming that every `.ctl` file has similar data structure except the time step is different.  This is similar to [`xarray.open_mfdataset`](http://xarray.pydata.org/en/v0.12.3/generated/xarray.open_mfdataset.html).
+
 ---
 
 ### 3.3 Convert a GrADS dataset to a NetCDF dataset
