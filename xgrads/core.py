@@ -263,9 +263,9 @@ class CtlDescriptor(object):
 
         if xlnr:
             start, intv = float(tokens[3]), float(tokens[4])
-            self.xdef = Coordinate('xdef', np.arange(start,
-                                                     start + intv * xnum,
-                                                     intv, dtype=np.float32))
+            self.xdef = Coordinate('xdef', np.linspace(start,
+                                                       start + intv * (xnum-1),
+                                                       xnum, dtype=np.float32))
         else:
             values = [float(i) for i in tokens[3:]]
             count  = len(values)
@@ -295,9 +295,9 @@ class CtlDescriptor(object):
         
         if ylnr:
             start, intv = float(tokens[3]), float(tokens[4])
-            self.ydef = Coordinate('ydef', np.arange(start,
-                                                     start + intv * ynum,
-                                                     intv, dtype=np.float32))
+            self.ydef = Coordinate('ydef', np.linspace(start,
+                                                       start + intv * (ynum-1),
+                                                       ynum, dtype=np.float32))
         else:
             values = [float(i) for i in tokens[3:]]
             count  = len(values)
@@ -326,9 +326,9 @@ class CtlDescriptor(object):
         
         if zlnr:
             start, intv = float(tokens[3]), float(tokens[4])
-            self.zdef = Coordinate('zdef', np.arange(start,
-                                                     start + intv * znum,
-                                                     intv, dtype=np.float32))
+            self.zdef = Coordinate('zdef', np.linspace(start,
+                                                       start + intv * (znum-1),
+                                                       znum, dtype=np.float32))
             
         else:
             values = [float(i) for i in tokens[3:]]
