@@ -11,7 +11,7 @@ This python package [`xgrads`](https://github.com/miniufo/xgrads) is designed fo
 ---
 ## 2. How to install
 **Requirements**
-`xgrads` is developed under the environment with `xarray` (=version 0.15.0), `dask` (=version 2.11.0), and `numpy` (=version 1.15.4).  Older versions of these packages are not well tested.
+`xgrads` is developed under the environment with `xarray` (=version 0.15.0), `dask` (=version 2.11.0), `numpy` (=version 1.15.4), `cartopy` (=version 0.17.0), and `pyproj` (=version 1.9.6).  Older versions of these packages are not well tested.
 
 **Install via pip**
 ```
