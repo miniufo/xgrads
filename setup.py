@@ -41,5 +41,6 @@ setup(
         "numpy",
         "xarray",
         "dask",
+        "pyproj",
     ],
 )

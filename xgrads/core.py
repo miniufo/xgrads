@@ -7,7 +7,6 @@ Copyright 2018. All rights reserved. Use is subject to license terms.
 """
 import os, sys, re
 import numpy as np
-import cartopy.crs as ccrs
 from datetime import datetime
 from numpy import datetime64, timedelta64
 
@@ -135,15 +134,6 @@ class CtlDescriptor(object):
                             '(file='' or content='' is allowed)')
         
         self.parse(fileContent)
-        
-    def get_data_projection(self):
-        """
-        Return the data projection indicated in PDEF for plot using cartopy.
-        """
-        if self.pdef is None:
-            return ccrs.PlateCarree()
-        else:
-            return self.pdef.get_projection()
     
     def parse(self, fileContent):
         for oneline in fileContent:
@@ -673,27 +663,6 @@ class PDEF(object):
         
         else:
             raise Exception('not currently supported PDEF\n' + oneline)
-    
-    def get_projection(self):
-        PROJ = self.proj
-        
-        if   PROJ is None:
-            return ccrs.PlateCarree()
-        elif PROJ in ['lcc', 'lccr']:
-            return ccrs.LambertConformal(
-                      central_latitude   = self.latref,
-                      central_longitude  = self.lonref,
-                      standard_parallels = (self.Struelat, self.Ntruelat),
-                      false_easting  = self.iref * self.dx,
-                      false_northing = self.jref * self.dy)
-        elif PROJ == 'nps':
-            return ccrs.NorthPolarStereo(
-                      central_longitude = self.lonref,
-                      true_scale_latitude = 60) # used by GrADS?
-        elif PROJ == 'sps':
-            return ccrs.SouthPolarStereo(
-                      central_longitude = self.lonref,
-                      true_scale_latitude = -60) # used by GrADS?
 
     def __str__(self):
         """
@@ -764,8 +733,8 @@ class CtlVar(object):
     """
     A simple variable class used in .ctl file
     """
-    __reBlank = re.compile('[\s\t]+')
-    __reUnits = re.compile('\([^\(\)]+?\)')
+    __reBlank = re.compile(r'[\s\t]+')
+    __reUnits = re.compile(r'\([^\(\)]+?\)')
     
     
     def __init__(self, oneLineStr):

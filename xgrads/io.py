@@ -218,6 +218,10 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
 
     dset.attrs['title'] = ctl.title
     dset.attrs['undef'] = ctl.undef
+    dset.attrs['pdef' ] = None
+    
+    if ctl.pdef:
+        dset.attrs['pdef' ] = ctl.pdef.proj
     
     if returnctl:
         return dset, ctl
