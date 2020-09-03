@@ -136,6 +136,8 @@ class CtlDescriptor(object):
         self.parse(fileContent)
     
     def parse(self, fileContent):
+        dpath_str = None
+        
         for oneline in fileContent:
             if   oneline.lower().startswith('dset'):
                 dpath_str = oneline.split()[1]
@@ -166,6 +168,11 @@ class CtlDescriptor(object):
                 self._processTDef(oneline)
             elif oneline.lower().startswith('vars'):
                 self._processVars(oneline, fileContent)
+            elif oneline.startswith('*') or oneline.strip() == '':
+                continue
+        
+        if dpath_str == None:
+            raise Exception('no valid dset is parsed')
         
         if self.template:
             self._processDSets(dpath_str)
@@ -179,8 +186,6 @@ class CtlDescriptor(object):
             self.zdef = np.flip(self.zdef)
     
     def _processDSets(self, dpath_str):
-        times = self.tdef.samples
-        
         strPos = dpath_str.find('%')
         
         if strPos == -1:
@@ -198,10 +203,12 @@ class CtlDescriptor(object):
         
         fileList = []
         
+        times = self.tdef.samples
         for l in range(len(times)):
             part = times[l].item().strftime(fmt)
             
             fname = dpath_str[:strPos] + part + dpath_str[endPos:]
+            fname = self._replace_forecast_template(fname, l)
             
             # remove duplicated file
             if fname not in fileList:
@@ -511,8 +518,40 @@ class CtlDescriptor(object):
             return '%H'
         elif part == '%n2':
             return '%M'
+        elif part in ['%f3', '%f2']: # this is not supported by strftime()
+            return '_miniufo_' + part[1:]
         else:
             raise Exception('unsupported format: ' + part)
+    
+    def _replace_forecast_template(self, fname, l):
+        """
+        Replace forecast str %f as a template in dset.
+    
+        Parameters
+        ----------
+        fname: str
+            A given string of binary file.
+        l: int
+            Index of file in a template.
+    
+        Returns
+        -------
+        re : str
+            A string after replacing the %f template.
+        """
+        if fname.find('_miniufo_f3') != -1:
+            dt_h = self.incre.astype('timedelta64[s]') / \
+                np.timedelta64(1, 'h')
+            fname = fname.replace('_miniufo_f3', '{0:03d}'.format(
+                        int(dt_h * l)))
+        
+        if fname.find('_miniufo_f2') != -1:
+            dt_h = self.incre.astype('timedelta64[s]') / \
+                np.timedelta64(1, 'h')
+            fname = fname.replace('_miniufo_f2', '{0:02d}'.format(
+                        int(dt_h * l)))
+        
+        return fname
 
     def _split_by_len(self, s, size):
         """
@@ -580,7 +619,7 @@ class CtlDescriptor(object):
             
             return np.arange(start, start + intv * tnum, intv)
 
-    def __str__(self):
+    def __repr__(self):
         """
         Print this class as a string.
         """
