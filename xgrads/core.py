@@ -792,7 +792,7 @@ class CtlVar(object):
         self.strPos = 0
         
         self.name, self.zcount, self.storage, self.comment = \
-            CtlVar.__reBlank.split(oneLineStr, maxsplit=3)
+            CtlVar.__reBlank.split(oneLineStr.strip(), maxsplit=3)
         
         self.zcount = int(self.zcount)
         
