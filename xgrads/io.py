@@ -414,7 +414,8 @@ def __read_var(file, var, tstride, tstep, zstep, dtype, sequentialSize=-1):
             return __read_continuous(file, pos, shape, dtype,
                                      sequentialShape=seqShp)
     
-    elif var.storage == '99' or var.storage == '0':
+    elif var.storage in ['99', '0', '00', '000', '1', '11', '111']:
+    # elif var.storage == '99' or var.storage == '0':
         if tstep is None and zstep is None:
             shape = (1, var.zcount, var.ycount, var.xcount)
             if sequentialSize != -1:
