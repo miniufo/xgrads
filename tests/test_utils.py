@@ -10,7 +10,7 @@ Copyright 2018. All rights reserved. Use is subject to license terms.
 from xgrads.xgrads import open_CtlDataset
 
 
-dset, ctl = open_CtlDataset('d:/cuace_emi_indexNPS.ctl', returnctl=True)
+dset, ctl = open_CtlDataset('d:/EMI_2014_monthly.ctl', returnctl=True)
 
 data = dset.emi_index[0]
 data.where(data!=ctl.undef).plot(figsize=(9,5), cmap='jet')
@@ -56,13 +56,13 @@ ax.set_global()
 
 
 #%%
-from xgrads.xgrads.utils import get_latlon_from_PDEF, get_data_projection
+from xgrads.xgrads.utils import get_coordinates_from_PDEF, get_data_projection
 
 
-lat, lon = get_latlon_from_PDEF(ctl)
+lat, lon = get_coordinates_from_PDEF(ctl)
 data_proj = get_data_projection(ctl)
 
-data = dset.emi_index[0].values.ravel()
+data = dset.emi_index[0]
 
 
 plt.figure(figsize=(18,10))
@@ -86,5 +86,13 @@ ax.add_feature(cf.BORDERS)
 ax.set_title('Orthographic projection')
 ax.set_global()
 
+
+#%%
+from xgrads.xgrads.utils import interp_to_latlon
+
+
+emi = interp_to_latlon(dset.emi_index, ctl)
+
+emi[0].plot(figsize=(14,7), cmap='jet')
 
 

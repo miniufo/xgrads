@@ -53,19 +53,48 @@ def get_data_projection(ctl):
                       true_scale_latitude = -60) # used by GrADS?
 
 
-
-def get_latlon_from_PDEF(ctl):
+def interp_to_latlon(var, ctl):
     """
-    Calculate lat/lon coordinates of the PDEF data.
+    Interpolate the preprojected data onto lat/lon grids defined by ctl.
 
     Parameters
     ----------
     ctl : str or CtlDescriptor
         Either a string representing a `ctl` file or a CtlDescriptor.
+    var: DataArray
+        A variable defined at preprojected coordinates and
+        need to be interpolated onto lat/lon grids.
 
     Returns
     -------
-    xarray.Dataset
+    re: xarray.DataArray
+        Interpolated variable
+    """
+    if isinstance(ctl, str):
+        from .core import CtlDescriptor
+        ctl = CtlDescriptor(file=ctl)
+    
+    # get preprojected coordinates
+    ypos, xpos = get_coordinates_from_PDEF(ctl, latlon=False)
+    
+    return var.interp(dict(y=ypos, x=xpos))
+    
+
+
+def get_coordinates_from_PDEF(ctl, latlon=True):
+    """
+    Calculate coordinates based on the PDEF information.
+
+    Parameters
+    ----------
+    ctl : str or CtlDescriptor
+        Either a string representing a `ctl` file or a CtlDescriptor.
+    latlon : boolean
+        Return lat/lon coordinates or preprojected coordinates.
+
+    Returns
+    -------
+    y, x: xarray.DataArray, xarray.DataArray
     """
     if isinstance(ctl, str):
         from .core import CtlDescriptor
@@ -74,17 +103,17 @@ def get_latlon_from_PDEF(ctl):
     pdef = ctl.pdef
     
     if pdef is None:
-        lats, lons = xr.broadcast(ctl.lat, ctl.lon)
+        lats, lons = xr.broadcast(ctl.ydef.samples, ctl.xdef.samples)
         
-        return lats.ravel(), lons.ravel()
+        return lats, lons
     
     else:
         PROJ = pdef.proj
         
         if   PROJ is None:
-            lats, lons = xr.broadcast(ctl.lat, ctl.lon)
+            lats, lons = xr.broadcast(ctl.ydef.samples, ctl.xdef.samples)
             
-            return lats.ravel(), lons.ravel()
+            return lats, lons
         
         elif PROJ in ['lcc', 'lccr']:
             p = Proj(proj='lcc', datum='WGS84',
@@ -125,11 +154,28 @@ def get_latlon_from_PDEF(ctl):
                                  pdef.isize) * inc
         else:
             raise Exception('unsupported projection ' + PROJ)
+        
+        if latlon:
+            xmesh, ymesh = np.meshgrid(xpos, ypos)
             
-        xpos, ypos = np.meshgrid(xpos, ypos)
+            reX, reY = p(xmesh, ymesh, inverse=True)
+            
+            reX = xr.DataArray(reX, dims=['y', 'x'],
+                               coords={'x':xpos, 'y':ypos})
+            reY = xr.DataArray(reY, dims=['y', 'x'],
+                               coords={'x':xpos, 'y':ypos})
+            
+        else:
+            lats, lons = ctl.ydef.samples, ctl.xdef.samples
+            xmesh, ymesh = np.meshgrid(lons, lats)
+            
+            reX, reY = p(xmesh, ymesh, inverse=False)
+            
+            reX = xr.DataArray(reX, dims=['lat', 'lon'],
+                               coords={'lat':lats, 'lon':lons})
+            reY = xr.DataArray(reY, dims=['lat', 'lon'],
+                               coords={'lat':lats, 'lon':lons})
         
-        lons, lats = p(xpos, ypos, inverse=True)
-        
-        return lats.ravel(), lons.ravel()
+        return reY, reX
 
 
