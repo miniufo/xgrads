@@ -96,10 +96,16 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
     ctl : xgrads.CtlDescriptor
         Ctl descriptor file.
     """
-    if not desfile.endswith('.ctl'):
-        raise Exception('unsupported file, suffix should be .ctl')
-
-    ctl = CtlDescriptor(encoding=encoding, file=desfile)
+    if isinstance(desfile, str):
+        if not desfile.endswith('.ctl'):
+            raise Exception('unsupported file, suffix should be .ctl')
+    
+        ctl = CtlDescriptor(encoding=encoding, file=desfile)
+    elif isinstance(desfile, CtlDescriptor):
+        ctl = desfile
+    else:
+        raise Exception('unsupported type of input ('+str(type(desfile))+'), ' +
+                        '[CtlDescriptor or str] are allowed')
     
     if ctl.template:
         tcount = len(ctl.tdef.samples) # number of total time count

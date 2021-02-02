@@ -109,30 +109,29 @@ class CtlDescriptor(object):
             
             with open(abspath, 'r', encoding=encoding) as f:
                 fileContent = f.readlines()
-                
-                # fileContent = [line.lower() if not line.startswith('dset')
-                #                else line for line in fileContent]
-                
-                for i, line in enumerate(fileContent):
-                    llower = line.lower()
-                    if (llower.startswith('dset') or
-                        llower.startswith('index') or
-                        llower.startswith('stnmap')) and '^' in line:
-                        dirname = os.path.dirname(abspath)
-                        if dirname[-1] != '/':
-                            fileContent[i] = line.replace('^',
-                                               os.path.dirname(abspath) + '/')
-                        else:
-                            fileContent[i] = line.replace('^',
-                                               os.path.dirname(abspath))
-            self.descPath=abspath
         
         elif kwargs.get('content'):
-            fileContent = kwargs['content'].lower().splitlines()
+            abspath = None
+            fileContent = kwargs['content'].splitlines()
         else:
             raise Exception('invalid key word '+
                             '(file='' or content='' is allowed)')
         
+        for i, line in enumerate(fileContent):
+            llower = line.lower()
+            if (llower.startswith('dset') or
+                llower.startswith('index') or
+                llower.startswith('stnmap')
+               ) and abspath is not None and '^' in line:
+                dirname = os.path.dirname(abspath)
+                if dirname[-1] != '/':
+                    fileContent[i] = line.replace('^',
+                                       os.path.dirname(abspath) + '/')
+                else:
+                    fileContent[i] = line.replace('^',
+                                       os.path.dirname(abspath))
+        
+        self.descPath=abspath
         self.parse(fileContent)
     
     def parse(self, fileContent):
