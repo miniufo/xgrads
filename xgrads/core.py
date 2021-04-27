@@ -408,7 +408,8 @@ class CtlDescriptor(object):
                 v.ycount = y
                 v.xcount = x
             
-            if v.storage in ['99', '0']:
+            # if v.storage in ['99', '0']:
+            if v.storage in ['99', '0', '00', '000', '1', '11', '111']:
                 v.strPos = vs.zcount * self.zRecLength + vs.strPos
                 type1 = True
             elif v.storage == '-1,20':

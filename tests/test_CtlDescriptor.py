@@ -62,4 +62,12 @@ print(ctl)
 dset = open_CtlDataset(ctl)
 
 
+#%%
+from xgrads.xgrads import CtlDescriptor, open_CtlDataset
+
+# ctl = CtlDescriptor(file='d:/Z.ctl')
+dset = open_CtlDataset('d:/Z.ctl')
+
+
+
 
