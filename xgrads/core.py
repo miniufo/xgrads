@@ -665,8 +665,10 @@ class PDEF(object):
         oneline : str
             The ASCII line of PDEF in ctl file.
         """
-        if 'nps' in oneline or 'sps' in oneline:
-            token = oneline.split()
+        lineLower = oneline.lower()
+        
+        if 'nps' in lineLower or 'sps' in lineLower:
+            token = lineLower.split()
             
             if len(token) != 8:
                 raise Exception('not enough tokens for PDEF, ' +
@@ -680,8 +682,8 @@ class PDEF(object):
             self.lonref  = float(token[6]) # reference longitude
             self.gridinc = float(token[7]) # distance between gripoints in km
             
-        elif 'lccr' in oneline or 'lcc' in oneline:
-            token = oneline.split()
+        elif 'lccr' in lineLower or 'lcc' in lineLower:
+            token = lineLower.split()
             
             if len(token) != 13:
                 raise Exception('not enough tokens for PDEF, ' +

@@ -14,14 +14,26 @@ from pyproj import Proj
 """
 Some map projection function useful for plotting
 """
-def get_data_projection(ctl):
+def get_data_projection(ctl, globe=None):
     """
     Return the data projection indicated in PDEF for plot using cartopy.
 
     Parameters
     ----------
-    ctl : str or CtlDescriptor
+    ctl: str or CtlDescriptor
         Either a string representing a `ctl` file or a CtlDescriptor.
+    globe: ccrs.Globe
+        Default Globe parameter (None) in cartopy uses ellipse=WGS84.  Some
+        regional numerical model like WRF use a spherical earth with a radius
+        of 6370 km.  If one want to plot the data output from WRF with PDEF,
+        one needs to set a globe:
+            ```python
+            globe = ccrs.Globe(ellipse='sphere',
+                               semimajor_axis=6370000,
+                               semiminor_axis=6370000)
+            ```
+        and then provided this globe to this function for an accurate plot.
+        Thanks to singledoggy at https://github.com/miniufo/xgrads/issues/32
 
     Returns
     -------
@@ -30,25 +42,25 @@ def get_data_projection(ctl):
     pdef = ctl.pdef
     
     if pdef is None:
-        return ccrs.PlateCarree()
+        return ccrs.PlateCarree(globe=globe)
     else:
         PROJ = pdef.proj
         
         if   PROJ is None:
-            return ccrs.PlateCarree()
+            return ccrs.PlateCarree(globe=globe)
         elif PROJ in ['lcc', 'lccr']:
-            return ccrs.LambertConformal(
+            return ccrs.LambertConformal(globe=globe,
                       central_latitude   = pdef.latref,
                       central_longitude  = pdef.lonref,
                       standard_parallels = (pdef.Struelat, pdef.Ntruelat),
                       false_easting  = pdef.iref * pdef.dx,
                       false_northing = pdef.jref * pdef.dy)
         elif PROJ == 'nps':
-            return ccrs.NorthPolarStereo(
+            return ccrs.NorthPolarStereo(globe=globe,
                       central_longitude = pdef.lonref,
                       true_scale_latitude = 60) # used by GrADS?
         elif PROJ == 'sps':
-            return ccrs.SouthPolarStereo(
+            return ccrs.SouthPolarStereo(globe=globe,
                       central_longitude = pdef.lonref,
                       true_scale_latitude = -60) # used by GrADS?
 
