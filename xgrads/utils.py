@@ -34,7 +34,9 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
                                semiminor_axis=6370000)
             ```
         and then provided this globe to this function for an accurate plot.
-        Thanks to singledoggy at https://github.com/miniufo/xgrads/issues/32
+        Thanks to singledoggy at
+        https://github.com/miniufo/xgrads/issues/32
+        https://github.com/miniufo/xgrads/issues/37
 
     Returns
     -------
@@ -138,7 +140,9 @@ def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
         Radius of the earth, default is 6371200m, consistent with GrADS.
         But this function is usually used in WRF data, then one should use
         6370000m, consistent with WRF model.
-        Thanks to singledoggy at https://github.com/miniufo/xgrads/issues/32
+        Thanks to singledoggy at
+        https://github.com/miniufo/xgrads/issues/32
+        https://github.com/miniufo/xgrads/issues/37
 
     Returns
     -------
