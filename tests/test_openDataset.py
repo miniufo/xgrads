@@ -53,3 +53,12 @@ dset3 = xr.tutorial.open_dataset('air_temperature').load()
 
 for l in range(len(dset1.time)):
     xr.testing.assert_equal(dset1.air[l], dset2.air[l])
+    
+#%%
+dset1, ctl = open_CtlDataset('./xgrads/ctls/test10.ctl', returnctl=True)
+
+#%%
+from xgrads.xgrads import CtlDescriptor
+
+ctl1 = CtlDescriptor(file='./xgrads/ctls/test11.ctl')
+dset1, ctl = open_CtlDataset('./xgrads/ctls/test11.ctl', returnctl=True)

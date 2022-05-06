@@ -69,5 +69,9 @@ from xgrads.xgrads import CtlDescriptor, open_CtlDataset
 dset = open_CtlDataset('d:/Z.ctl')
 
 
+#%%
+from xgrads.xgrads import CtlDescriptor
+
+ctl = CtlDescriptor(file='E:/OneDrive/Python/MyPack/xgrads/ctls/grid.d1.ctl')
 
 

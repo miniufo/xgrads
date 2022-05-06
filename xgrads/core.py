@@ -32,6 +32,8 @@ class CtlDescriptor(object):
         xdef: x-definition
         vdef: variable-definition
         
+        comments: list of global string comments
+        
         zrev: z-dimension reverse (i.e., from north to south)
         yrev: y-dimension reverse (i.e., from upper to lower levels)
         
@@ -77,6 +79,7 @@ class CtlDescriptor(object):
         self.ydef = None
         self.xdef = None
         self.vdef = None
+        self.comments = {}
         
         self.dsetPath = ''
         self.descPath = ''
@@ -167,6 +170,8 @@ class CtlDescriptor(object):
                 self._processTDef(oneline)
             elif oneline.lower().startswith('vars'):
                 self._processVars(oneline, fileContent)
+            elif oneline.lower().startswith('@ global string comment'):
+                self._processGlobalComments(oneline)
             elif oneline.startswith('*') or oneline.strip() == '':
                 continue
         
@@ -428,6 +433,11 @@ class CtlDescriptor(object):
         
         if fileContent[start + vnum].strip().lower() != 'endvars':
             raise Exception('endvars is expected')
+    
+    def _processGlobalComments(self, oneline):
+        cnt = oneline[24:].strip().split('=')
+        
+        self.comments[cnt[0].strip()] = cnt[1].strip()
 
     def _get_template_format(self, part):
         """
@@ -705,7 +715,7 @@ class PDEF(object):
         else:
             raise Exception('not currently supported PDEF\n' + oneline)
 
-    def __str__(self):
+    def __repr__(self):
         """
         Print this class as a string.
         """
