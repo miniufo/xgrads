@@ -50,14 +50,24 @@ fig, axes = pplt.subplots(nrows=1, ncols=2, figsize=(11, 6))
 
 ax = axes[0]
 m=ax.pcolormesh(XLON, XLAT, np.abs(lats-XLAT))
-ax.set_title('error of lats (m)')
+ax.set_title('error of lats (deg)')
 ax.colorbar(m, loc='b')
 
 ax = axes[1]
 m=ax.pcolormesh(XLON, XLAT, np.abs(lons-XLON))
-ax.set_title('error of lons (m)')
+ax.set_title('error of lons (deg)')
 ax.colorbar(m, loc='b')
 
 axes.format(abc='(a)')
+
+
+#%% write proj info into NetCDF
+from pyproj import CRS
+
+projcrs = CRS(crs.proj4_init)
+
+cf = projcrs.to_cf()
+crs_new = projcrs.from_cf(cf)
+crs_new == projcrs
 
 
