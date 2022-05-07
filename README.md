@@ -3,6 +3,9 @@
 ![3D plot](https://raw.githubusercontent.com/miniufo/xgrads/master/pics/3D.png)
 
 
+[![DOI](https://zenodo.org/badge/244529165.svg)](https://zenodo.org/badge/latestdoi/244529165)
+![GitHub](https://img.shields.io/github/license/miniufo/xgrads)
+
 ## 1. Introduction
 The Grid Analysis and Display System ([GrADS](http://cola.gmu.edu/grads/) or [OpenGrADS](http://www.opengrads.org/)) is a widely used software for easy access, manipulation, and visualization of earth science data.  It uses a [descriptor (or control) file with a suffix `.ctl`](http://cola.gmu.edu/grads/gadoc/descriptorfile.html) to  describe a raw binary 4D dataset.  The `ctl` file is similar to the header information of a [NetCDF](https://www.unidata.ucar.edu/software/netcdf/docs/file_structure_and_performance.html) file, containing all the information about dimensions, attributes, and variables except for the variable data.
 
