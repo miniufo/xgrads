@@ -2,6 +2,8 @@
 
 [![DOI](https://zenodo.org/badge/244529165.svg)](https://zenodo.org/badge/latestdoi/244529165)
 ![GitHub](https://img.shields.io/github/license/miniufo/xgrads)
+[![Documentation Status](https://readthedocs.org/projects/xgrads/badge/?version=latest)](https://xgrads.readthedocs.io/en/latest/?badge=latest)
+
 
 ![3D plot](https://raw.githubusercontent.com/miniufo/xgrads/master/pics/3D.png)
 
