@@ -27,13 +27,9 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
         Default Globe parameter (None) in cartopy uses ellipse=WGS84.  Some
         regional numerical model like WRF use a spherical earth with a radius
         of 6370 km.  If one want to plot the data output from WRF with PDEF,
-        one uses a default globe:
-            ```python
-            globe = ccrs.Globe(ellipse='sphere',
-                               semimajor_axis=6370000,
-                               semiminor_axis=6370000)
-            ```
-        and then provided this globe to this function for an accurate plot.
+        one uses a default spherical globe with a radius of 6370000 and then
+        provided this globe to this function for an accurate plot.
+        
         Thanks to singledoggy at
         https://github.com/miniufo/xgrads/issues/32
         https://github.com/miniufo/xgrads/issues/37
