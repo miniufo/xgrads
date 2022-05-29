@@ -9,6 +9,11 @@ Welcome to xgrads's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   
+   1.introduction.md
+   2.parse_ctl.md
+   3.open_dataset.md
+   4.convert_netcdf.md
 
    ../modules
 

@@ -1,5 +1,5 @@
-xgrads
-======
+xgrads APIs
+============
 
 .. toctree::
    :maxdepth: 4
