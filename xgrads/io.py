@@ -19,24 +19,28 @@ from functools import reduce
 IO related functions here
 """
 def open_mfdataset(paths, parallel=False, encoding='GBK'):
-    """
-    Open multiple ctl files as a single dataset.
+    """Open multiple ctl files as a single dataset
+    
+    This is similar to `xarray.open_mfdataset()` that can simutaneously open
+    a series of ctl files that are in similar spatial ranges but of different
+    temporal ranges.
 
     Parameters
     ----------
-    paths : str or sequence
+    paths: str or sequence
         Either a string glob in the form ``"path/to/my/files/*.ctl"`` or an
         explicit list of files to open. Paths can be given as strings or as
         pathlib Paths.
-    parallel : bool, optional
+    parallel: bool, optional
         If True, the open and preprocess steps of this function will be
         performed in parallel using ``dask.delayed``. Default is False.
-    encoding : str
+    encoding: str
         Encoding for the ctl file content e.g., ['GBK', 'UTF-8'].
 
     Returns
     -------
-    xarray.Dataset
+    re: xarray.Dataset
+        A dataset.
 
     Notes
     -----
@@ -75,9 +79,9 @@ def open_mfdataset(paths, parallel=False, encoding='GBK'):
     return combined
 
 
-
 def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
-    """
+    """Open a single ctl dataset
+    
     Open a 4D dataset with a descriptor file end with .ctl and
     return a xarray.Dataset.  This also uses the dask to chunk
     very large dataset, which is similar to the xarray.open_dataset.
@@ -91,10 +95,10 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
 
     Returns
     -------
-    dset : xarray.Dataset
+    dset: xarray.Dataset
         Dataset object containing all coordinates and variables.
-    ctl : xgrads.CtlDescriptor
-        Ctl descriptor file.
+    ctl: xgrads.CtlDescriptor
+        Ctl descriptor file if returnctl == True.
     """
     if isinstance(desfile, str):
         if not desfile.endswith('.ctl'):
@@ -240,8 +244,17 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
 Helper (private) methods are defined below
 """
 def __read_as_dask(dd):
-    """
-    Read binary data and return as a dask array
+    """Read binary data and return as a dask array
+
+    Parameters
+    ----------
+    dd: CtlDescriptor
+        A CtlDescriptor
+
+    Returns
+    -------
+    re: dask.array
+        Data viewed as `dask.array`.
     """
     if dd.pdef is None:
         t, y, x = dd.tdef.length(), dd.ydef.length(), dd.xdef.length()
@@ -308,8 +321,19 @@ def __read_as_dask(dd):
 
 
 def __read_template_as_dask(dd, tcPerf):
-    """
-    Read template binary data and return as a dask array
+    """Read template binary data and return as a dask array
+
+    Parameters
+    ----------
+    dd: CtlDescriptor
+        A CtlDescriptor
+    tcPerf: list of int
+        Number of time count per file
+
+    Returns
+    -------
+    re: list of dask.array
+        Data viewed as `dask.array`.
     """
     if dd.pdef is None:
         t, y, x = dd.tdef.length(), dd.ydef.length(), dd.xdef.length()
@@ -366,24 +390,28 @@ def __read_template_as_dask(dd, tcPerf):
 
 
 def __read_var(file, var, tstride, tstep, zstep, dtype, sequentialSize=-1):
-    """
-    Read a variable given the trange.
+    """Read a variable given the trange
 
     Parameters
     ----------
-    file : str
+    file: str
         A file from which data are read.
-    var  : CtlVar
+    var: CtlVar
         A variable that need to be read.
-    tstride : int
+    tstride: int
         Stride of a single time record.
-    tstep : int
+    tstep: int
         T-step to be read, started from 0.  If None, read all t-steps
-    zstep : int
+    zstep: int
         Z-step to be read, started from 0.  If None, read all z-steps
-    sequentialSize : int
+    sequentialSize: int
         Size of the sequential block (= y * x).  Default of -1 means
         non-sequential storage.
+
+    Returns
+    -------
+    re: numpy.ndarray
+        Binary data.
     """
     # print(var.name+' '+str(tstep)+' '+str(zstep)+' '+str(var.strPos))
 
@@ -489,6 +517,11 @@ def __read_continuous(file, offset=0, shape=None, dtype='<f4',
     sequentialShape : tuple
         If in Fortran-sequential storage, provide a shape including the
         beginning and the end numbers.
+
+    Returns
+    -------
+    re: numpy.ndarray
+        Binary data.
     """
     with open(file, 'rb') as f:
         if use_mmap:

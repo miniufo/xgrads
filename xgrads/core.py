@@ -15,60 +15,86 @@ from numpy import datetime64, timedelta64
 Core classes are defined below
 """
 class CtlDescriptor(object):
-    """
-    This class represents a descriptor file like the .ctl file for GrADS.
-    It generally includes a multi-dimensional spherical dataset.
+    """A class for a ctl file
     
-    Attributes:
-        dsetPath: dataset file
-        descPath: descriptor file
-        indxPath: index file (for GRIB file)
-        stnmPath: station map file (for station file)
+    This class represents a descriptor file like the .ctl file for GrADS.
+    It generally includes a multi-dimensional dataset on the Earth.
+    
+    Attributes
+    ----------
+        dsetPath: str
+            dataset file
+        descPath: str
+            descriptor file
+        indxPath: str
+            index file (for GRIB file)
+        stnmPath: str
+            station map file (for station file)
         
-        pdef: projection-definition
-        tdef: t-definition
-        zdef: z-definition
-        ydef: y-definition
-        xdef: x-definition
-        vdef: variable-definition
+        pdef: PDEF
+            projection-definition
+        tdef: Coordinate
+            time coordinate definition
+        zdef: Coordinate
+            z-coordinate definition
+        ydef: Coordinate
+            y-coordinate definition
+        xdef: Coordinate
+            x-coordinate definition
+        vdef: list of CtlVar
+            variables definition
         
-        comments: list of global string comments
+        comments: list of str
+            list of global string comments
         
-        zrev: z-dimension reverse (i.e., from north to south)
-        yrev: y-dimension reverse (i.e., from upper to lower levels)
+        zrev: bool
+            z-dimension reverse (i.e., from north to south)
+        yrev: bool
+            y-dimension reverse (i.e., from upper to lower levels)
         
-        hasData: whether the corresponding binary data file exist
-        vcount : variable count
+        hasData: bool
+            whether the corresponding binary data file exist
+        vcount: int
+            variable count
         
-        dtype: data type
-        periodicX: whether xdef is periodic
+        dtype: numpy.dtype
+            data type
+        periodicX: bool
+            whether xdef is periodic
         
-        cal365Days: whether the calendar is always 365 days (no leap year)
-        template  : whether it is a template for multiple binary files
-        sequential: whether it is a sequential file (Fortran style)
-        byteOrder : byte order, little-endian or big-endian
-        storage   : storage type, '99' or '-1,20' or others
+        cal365Days: bool
+            whether the calendar is always 365 days (no leap year)
+        template: bool
+            whether it is a template for multiple binary files
+        sequential: bool
+            whether it is a sequential file (Fortran style)
+        byteOrder: str
+            byte order, ['little', 'big'] for little-endian or big-endian
+        storage: str
+            storage type, '99' or '-1,20' or others
         
-        totalZCount: total number of horizontal slice
-        zRecLength : record length of a single horizontal slice
-        tRecLength : record length of a single time (including all variables)
+        totalZCount: int
+            total number of horizontal slice
+        zRecLength: int
+            record length of a single horizontal slice
+        tRecLength: int
+            record length of a single time (including all variables)
     """
     def __init__(self, encoding='GBK', **kwargs):
-        """
-        Constructor.
+        """Constructor
         
         Parameters
         ----------
-        encoding : str
+        encoding: str
             Encoding for the ctl file contents e.g., ['GBK', 'UTF-8'].
-        file = fileName : str
+        file: str
             The ctl path/file name.
-        content = content: str
+        content: str
             A string representation for the ctl file contents.
 
         Returns
         ----------
-        ctl : CtlDescriptor
+        CtlDescriptor
             An object represents the ctl file
         """
         self.vcount = 0
@@ -106,6 +132,9 @@ class CtlDescriptor(object):
         
         if kwargs.get('file'):
             abspath = kwargs['file']
+            
+            if not '/' in abspath: # thanks to Baofeng Jiao from IAP
+                abspath = './' + abspath
             
             if os.path.getsize(abspath) / (1024.0*1024.0) > 2:
                 raise Exception('ctl file is too large (> 2 MB)')
@@ -440,8 +469,9 @@ class CtlDescriptor(object):
         self.comments[cnt[0].strip()] = cnt[1].strip()
 
     def _get_template_format(self, part):
-        """
-        Get time format string.  See the following URL for reference:
+        """Get time format string
+        
+        See the following URL for reference:
         http://cola.gmu.edu/grads/gadoc/templates.html
         
         %x1   1 digit decade
@@ -505,8 +535,8 @@ class CtlDescriptor(object):
     
         Returns
         -------
-        re : str
-            A string represents the format in python datetime
+        str
+            The format in python datetime
         """
         if   part == '%y2':
             return '%y'
@@ -534,8 +564,7 @@ class CtlDescriptor(object):
             raise Exception('unsupported format: ' + part)
     
     def _replace_forecast_template(self, fname, l):
-        """
-        Replace forecast str %f as a template in dset.
+        """Replace forecast str %f as a template in dset
     
         Parameters
         ----------
@@ -546,7 +575,7 @@ class CtlDescriptor(object):
     
         Returns
         -------
-        re : str
+        str
             A string after replacing the %f template.
         """
         if fname.find('_miniufo_f3') != -1:
@@ -564,20 +593,19 @@ class CtlDescriptor(object):
         return fname
 
     def _split_by_len(self, s, size):
-        """
-        Split a string by a given size.
+        """Split a string by a given size
     
         Parameters
         ----------
-        s : str
+        s: str
             A given string.
-        size : int
+        size: int
             A given size.
     
         Returns
         -------
-        re : list
-            A list contains the splitted strings.
+        list
+            The splitted strings.
         """
         chunks = len(s)
         
@@ -585,7 +613,8 @@ class CtlDescriptor(object):
 
 
     def _times_to_array(self, strTime, incre, tnum):
-        """
+        """Change format of time
+        
         Convert GrADS time string of strart time and increment
         to an array of numpy.datetime64.
         
@@ -600,7 +629,8 @@ class CtlDescriptor(object):
         
         Returns
         ----------
-            re : numpy array of datetime64
+        numpy array of datetime64
+            Times in datetime64 format
         """
         if 'mo' in incre:
             start = GrADStime_to_datetime(strTime)
@@ -630,9 +660,7 @@ class CtlDescriptor(object):
             return np.arange(start, start + intv * tnum, intv)
 
     def __repr__(self):
-        """
-        Print this class as a string.
-        """
+        """Print this class as a string"""
         vdef = np.array(self.vdef)
         pdef = self.pdef.proj if self.pdef is not None else ''
         
@@ -661,18 +689,29 @@ class CtlDescriptor(object):
 
 
 class PDEF(object):
-    """
-    PDEF class.  Parse necessary info in PDEF.
+    """PDEF class
+    
+    Parse necessary info in PDEF.
     
     Reference: http://cola.gmu.edu/grads/gadoc/pdef.html
+    
+    Attributes
+    ----------
+        isize: int
+            size of native grid in x direction
+        jsize: int
+            size of native grid in y direction
+        proj: str
+            type of projection
+        lonref: str
+            reference longitude
     """
     def __init__(self, oneline):
-        """
-        Constructor.
+        """Constructor
         
         Parameters
         ----------
-        oneline : str
+        oneline: str
             The ASCII line of PDEF in ctl file.
         """
         lineLower = oneline.lower()
@@ -716,22 +755,31 @@ class PDEF(object):
             raise Exception('not currently supported PDEF\n' + oneline)
 
     def __repr__(self):
-        """
-        Print this class as a string.
-        """
+        """Print this class as a string"""
         return '\n'.join(['%s: %s' % item for item in self.__dict__.items()])
     
 
 
-
 class Coordinate(object):
-    """
-    Discrete sampled coordinate.  This is a simple wrapper
-    for np.array for a coordinate.
+    """Discrete sampled coordinate
+    
+    This is a simple wrapper for np.array for a coordinate.
+    
+    Attributes
+    ----------
+        isLinear: bool
+            Steps are even or uneven
+        isIncre: int
+            Is increasing or decreasing
+        name: str
+            The name of the coordinate
+        samples: str
+            Discretized coordinate samples
+        delSamples: str
+            Finite difference between samples
     """
     def __init__(self, name, samples):
-        """
-        Constructor.
+        """Constructor
         
         Parameters
         ----------
@@ -773,16 +821,38 @@ class Coordinate(object):
         return True
     
     def __str__(self):
-        """
-        Print this class as a string.
-        """
+        """Print this class as a string"""
         return str(self.samples)
 
 
 
 class CtlVar(object):
-    """
-    A simple variable class used in .ctl file
+    """A simple variable class used in .ctl file
+    
+    Attributes
+    ----------
+        tcount: int
+            T grid points
+        zcount: int
+            Z grid points
+        ycount: int
+            Y grid points
+        xcount: int
+            X grid points
+        undef: float
+            Undefined values
+        dependZ: bool
+            Whether the var depends on z
+        unit: str
+            Unit of the variable
+        name: str
+            Name of the variable
+        comment: str
+            A short comment
+        index: str
+            Index of this variable
+        strPos: str
+            Start position (in bytes) of this variable in the binary file
     """
     __reBlank = re.compile(r'[\s\t]+')
     __reUnits = re.compile(r'\([^\(\)]+?\)')
@@ -841,8 +911,7 @@ class CtlVar(object):
 Some useful functions defined here
 """
 def GrADStime_to_datetime(gradsTime):
-    """
-    Convert GrADS time string e.g., 00:00z01Jan2000 to datetime
+    """Convert GrADS time string e.g., 00:00z01Jan2000 to datetime
     
     Parameters
     ----------
@@ -850,8 +919,9 @@ def GrADStime_to_datetime(gradsTime):
         Grads time in str format e.g., 00:00z01Jan2000.
     
     Returns
-    ----------
-        re : datetime
+    --------
+    datetime
+        GrADS time in datetime format
     """
     lens = len(gradsTime)
     
@@ -870,8 +940,7 @@ def GrADStime_to_datetime(gradsTime):
 
 
 def GrADStime_to_datetime64(gradsTime):
-    """
-    Convert GrADS time string e.g., 00:00z01Jan2000 to numpy.datetime64
+    """Convert GrADS time string e.g., 00:00z01Jan2000 to numpy.datetime64
     
     Parameters
     ----------
@@ -879,8 +948,9 @@ def GrADStime_to_datetime64(gradsTime):
         Grads time in str format e.g., 00:00z01Jan2000.
     
     Returns
-    ----------
-        re : datetime64
+    -------
+    datetime64
+        GrADS time in datetime64 format
     """
     time = GrADStime_to_datetime(gradsTime)
     
@@ -888,17 +958,17 @@ def GrADStime_to_datetime64(gradsTime):
 
 
 def GrADS_increment_to_timedelta64(incre):
-    """
-    Convert GrADS time increment string to numpy.timedelta64
+    """Convert GrADS time increment string to numpy.timedelta64
     
     Parameters
     ----------
-    incre : str
+    incre: str
         Grads time increment in str format e.g., 1dy.
     
     Returns
-    ----------
-        re : timedelta64
+    -------
+    timedelta64
+        GrADS time in datetime64 format
     """
     unit   = incre[-2:]
     amount = incre[:-2]
@@ -914,9 +984,5 @@ def GrADS_increment_to_timedelta64(incre):
     return timedelta64(int(amount), unitDict[unit])
 
 
-
-"""
-Helper (private) methods are defined below
-"""
 
 

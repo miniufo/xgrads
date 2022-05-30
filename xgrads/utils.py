@@ -16,7 +16,7 @@ _Rearth = 6371200
 Some map projection function useful for plotting
 """
 def get_data_projection(ctl, globe=None, Rearth=_Rearth):
-    """
+    """Get Projection
     Return the data projection indicated in PDEF for plot using cartopy.
 
     Parameters
@@ -36,7 +36,8 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
 
     Returns
     -------
-    xarray.Dataset
+    re: cartopy.ccrs
+        Cartopy coordinate reference system object for plotting.
     """
     pdef = ctl.pdef
     
@@ -95,7 +96,7 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
 
 
 def interp_to_latlon(var, ctl):
-    """
+    """Interpolate PDEF data onto lat/lon grids
     Interpolate the preprojected data onto lat/lon grids defined by ctl.
 
     Parameters
@@ -131,7 +132,8 @@ def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
     ctl : str or CtlDescriptor
         Either a string representing a `ctl` file or a CtlDescriptor.
     latlon : boolean
-        Return lat/lon coordinates or preprojected coordinates.
+        Return lat/lon coordinates on PDEF grids if True, from PDEF grids;
+        Return PDEF coordinates if False, from lat/lon grids.
     Rearth: float
         Radius of the earth, default is 6371200m, consistent with GrADS.
         But this function is usually used in WRF data, then one should use
@@ -143,6 +145,7 @@ def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
     Returns
     -------
     y, x: xarray.DataArray, xarray.DataArray
+        A tuple of (y, x) or (lat, lon)
     """
     if isinstance(ctl, str):
         from .core import CtlDescriptor
