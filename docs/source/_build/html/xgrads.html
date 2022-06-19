@@ -1,0 +1,432 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>xgrads package &mdash; xgrads 0.2.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/xgradsIcon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="xgrads APIs" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> xgrads
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="1.introduction.html">1. General Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2.parse_ctl.html">2. Parse CTL files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3.open_dataset.html">3. Open binary datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4.convert_netcdf.html">4. Convert to NetCDF file</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">xgrads APIs</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">xgrads package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-xgrads.core">xgrads.core module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xgrads-io-module">xgrads.io module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xgrads-utils-module">xgrads.utils module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-contents">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">xgrads</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">xgrads APIs</a> &raquo;</li>
+        
+      <li>xgrads package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/xgrads.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="xgrads-package">
+<h1>xgrads package<a class="headerlink" href="#xgrads-package" title="Permalink to this headline">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-xgrads.core">
+<span id="xgrads-core-module"></span><h2>xgrads.core module<a class="headerlink" href="#module-xgrads.core" title="Permalink to this headline">¶</a></h2>
+<p>Created on 2020.03.02</p>
+<p>&#64;author: MiniUFO
+Copyright 2018. All rights reserved. Use is subject to license terms.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="xgrads.core.Coordinate">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xgrads.core.</span></span><span class="sig-name descname"><span class="pre">Coordinate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#xgrads.core.Coordinate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Discrete sampled coordinate</p>
+<p>This is a simple wrapper for np.array for a coordinate.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>isLinear: bool</dt><dd><p>Steps are even or uneven</p>
+</dd>
+<dt>isIncre: int</dt><dd><p>Is increasing or decreasing</p>
+</dd>
+<dt>name: str</dt><dd><p>The name of the coordinate</p>
+</dd>
+<dt>samples: str</dt><dd><p>Discretized coordinate samples</p>
+</dd>
+<dt>delSamples: str</dt><dd><p>Finite difference between samples</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="py method">
+<dt class="sig sig-object py" id="xgrads.core.Coordinate.isPeriodic">
+<span class="sig-name descname"><span class="pre">isPeriodic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">period</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#xgrads.core.Coordinate.isPeriodic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="xgrads.core.Coordinate.length">
+<span class="sig-name descname"><span class="pre">length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#xgrads.core.Coordinate.length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="xgrads.core.CtlDescriptor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xgrads.core.</span></span><span class="sig-name descname"><span class="pre">CtlDescriptor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'GBK'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#xgrads.core.CtlDescriptor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class for a ctl file</p>
+<p>This class represents a descriptor file like the .ctl file for GrADS.
+It generally includes a multi-dimensional dataset on the Earth.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>dsetPath: str</dt><dd><p>dataset file</p>
+</dd>
+<dt>descPath: str</dt><dd><p>descriptor file</p>
+</dd>
+<dt>indxPath: str</dt><dd><p>index file (for GRIB file)</p>
+</dd>
+<dt>stnmPath: str</dt><dd><p>station map file (for station file)</p>
+</dd>
+<dt>pdef: PDEF</dt><dd><p>projection-definition</p>
+</dd>
+<dt>tdef: Coordinate</dt><dd><p>time coordinate definition</p>
+</dd>
+<dt>zdef: Coordinate</dt><dd><p>z-coordinate definition</p>
+</dd>
+<dt>ydef: Coordinate</dt><dd><p>y-coordinate definition</p>
+</dd>
+<dt>xdef: Coordinate</dt><dd><p>x-coordinate definition</p>
+</dd>
+<dt>vdef: list of CtlVar</dt><dd><p>variables definition</p>
+</dd>
+<dt>comments: list of str</dt><dd><p>list of global string comments</p>
+</dd>
+<dt>zrev: bool</dt><dd><p>z-dimension reverse (i.e., from north to south)</p>
+</dd>
+<dt>yrev: bool</dt><dd><p>y-dimension reverse (i.e., from upper to lower levels)</p>
+</dd>
+<dt>hasData: bool</dt><dd><p>whether the corresponding binary data file exist</p>
+</dd>
+<dt>vcount: int</dt><dd><p>variable count</p>
+</dd>
+<dt>dtype: numpy.dtype</dt><dd><p>data type</p>
+</dd>
+<dt>periodicX: bool</dt><dd><p>whether xdef is periodic</p>
+</dd>
+<dt>cal365Days: bool</dt><dd><p>whether the calendar is always 365 days (no leap year)</p>
+</dd>
+<dt>template: bool</dt><dd><p>whether it is a template for multiple binary files</p>
+</dd>
+<dt>sequential: bool</dt><dd><p>whether it is a sequential file (Fortran style)</p>
+</dd>
+<dt>byteOrder: str</dt><dd><p>byte order, [‘little’, ‘big’] for little-endian or big-endian</p>
+</dd>
+<dt>storage: str</dt><dd><p>storage type, ‘99’ or ‘-1,20’ or others</p>
+</dd>
+<dt>totalZCount: int</dt><dd><p>total number of horizontal slice</p>
+</dd>
+<dt>zRecLength: int</dt><dd><p>record length of a single horizontal slice</p>
+</dd>
+<dt>tRecLength: int</dt><dd><p>record length of a single time (including all variables)</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="py method">
+<dt class="sig sig-object py" id="xgrads.core.CtlDescriptor.parse">
+<span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fileContent</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#xgrads.core.CtlDescriptor.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="xgrads.core.CtlVar">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xgrads.core.</span></span><span class="sig-name descname"><span class="pre">CtlVar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">oneLineStr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#xgrads.core.CtlVar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A simple variable class used in .ctl file</p>
+<blockquote>
+<div><dl class="simple">
+<dt>tcount: int</dt><dd><p>T grid points</p>
+</dd>
+<dt>zcount: int</dt><dd><p>Z grid points</p>
+</dd>
+<dt>ycount: int</dt><dd><p>Y grid points</p>
+</dd>
+<dt>xcount: int</dt><dd><p>X grid points</p>
+</dd>
+<dt>undef: float</dt><dd><p>Undefined values</p>
+</dd>
+<dt>dependZ: bool</dt><dd><p>Whether the var depends on z</p>
+</dd>
+<dt>unit: str</dt><dd><p>Unit of the variable</p>
+</dd>
+<dt>name: str</dt><dd><p>Name of the variable</p>
+</dd>
+<dt>comment: str</dt><dd><p>A short comment</p>
+</dd>
+<dt>index: str</dt><dd><p>Index of this variable</p>
+</dd>
+<dt>strPos: str</dt><dd><p>Start position (in bytes) of this variable in the binary file</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xgrads.core.GrADS_increment_to_timedelta64">
+<span class="sig-prename descclassname"><span class="pre">xgrads.core.</span></span><span class="sig-name descname"><span class="pre">GrADS_increment_to_timedelta64</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">incre</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#xgrads.core.GrADS_increment_to_timedelta64" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert GrADS time increment string to numpy.timedelta64</p>
+<dl class="simple">
+<dt>incre: str</dt><dd><p>Grads time increment in str format e.g., 1dy.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>timedelta64</dt><dd><p>GrADS time in datetime64 format</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xgrads.core.GrADStime_to_datetime">
+<span class="sig-prename descclassname"><span class="pre">xgrads.core.</span></span><span class="sig-name descname"><span class="pre">GrADStime_to_datetime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gradsTime</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#xgrads.core.GrADStime_to_datetime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert GrADS time string e.g., 00:00z01Jan2000 to datetime</p>
+<dl class="simple">
+<dt>gradsTime<span class="classifier">str</span></dt><dd><p>Grads time in str format e.g., 00:00z01Jan2000.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>datetime</dt><dd><p>GrADS time in datetime format</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xgrads.core.GrADStime_to_datetime64">
+<span class="sig-prename descclassname"><span class="pre">xgrads.core.</span></span><span class="sig-name descname"><span class="pre">GrADStime_to_datetime64</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gradsTime</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#xgrads.core.GrADStime_to_datetime64" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert GrADS time string e.g., 00:00z01Jan2000 to numpy.datetime64</p>
+<dl class="simple">
+<dt>gradsTime<span class="classifier">str</span></dt><dd><p>Grads time in str format e.g., 00:00z01Jan2000.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>datetime64</dt><dd><p>GrADS time in datetime64 format</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="xgrads.core.PDEF">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xgrads.core.</span></span><span class="sig-name descname"><span class="pre">PDEF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">oneline</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#xgrads.core.PDEF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>PDEF class</p>
+<p>Parse necessary info in PDEF.</p>
+<p>Reference: <a class="reference external" href="http://cola.gmu.edu/grads/gadoc/pdef.html">http://cola.gmu.edu/grads/gadoc/pdef.html</a></p>
+<blockquote>
+<div><dl class="simple">
+<dt>isize: int</dt><dd><p>size of native grid in x direction</p>
+</dd>
+<dt>jsize: int</dt><dd><p>size of native grid in y direction</p>
+</dd>
+<dt>proj: str</dt><dd><p>type of projection</p>
+</dd>
+<dt>lonref: str</dt><dd><p>reference longitude</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+</section>
+<section id="xgrads-io-module">
+<h2>xgrads.io module<a class="headerlink" href="#xgrads-io-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="xgrads-utils-module">
+<h2>xgrads.utils module<a class="headerlink" href="#xgrads-utils-module" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="modules.html" class="btn btn-neutral float-left" title="xgrads APIs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2022, MiniUFO
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

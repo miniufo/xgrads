@@ -29,8 +29,8 @@ dset = open_CtlDataset('D:/Data/Haima/HaimaPTOrig.ctl')
 dset = open_CtlDataset('D:/Data/MITgcm/flt/float/Stat.ctl')
 
 #%%
-dset1 = open_CtlDataset('./xgrads/ctls/test8.ctl')
-dset2 = open_CtlDataset('./xgrads/ctls/test9.ctl')
+dset1 = open_CtlDataset('../ctls/test8.ctl')
+dset2 = open_CtlDataset('../ctls/test9.ctl')
 dset3 = xr.tutorial.open_dataset('air_temperature')
 
 for l in range(len(dset1.time)):
@@ -38,8 +38,8 @@ for l in range(len(dset1.time)):
     xr.testing.assert_equal(dset1.air[l], dset3.air[l])
 
 #%%
-dset1 = open_mfdataset('./xgrads/ctls/test8_*.ctl', parallel=True)
-dset2 = open_CtlDataset('./xgrads/ctls/test8.ctl').load()
+dset1 = open_mfdataset('../ctls/test8_*.ctl', parallel=True)
+dset2 = open_CtlDataset('../ctls/test8.ctl').load()
 dset3 = xr.tutorial.open_dataset('air_temperature').load()
 
 for l in range(len(dset1.time)):
@@ -47,18 +47,18 @@ for l in range(len(dset1.time)):
 
 
 #%%
-dset1 = open_mfdataset('./xgrads/ctls/test9_*.ctl', parallel=True)
-dset2 = open_CtlDataset('./xgrads/ctls/test9.ctl').load()
+dset1 = open_mfdataset('../ctls/test9_*.ctl', parallel=True)
+dset2 = open_CtlDataset('../ctls/test9.ctl').load()
 dset3 = xr.tutorial.open_dataset('air_temperature').load()
 
 for l in range(len(dset1.time)):
     xr.testing.assert_equal(dset1.air[l], dset2.air[l])
     
 #%%
-dset1, ctl = open_CtlDataset('./xgrads/ctls/test10.ctl', returnctl=True)
+dset1, ctl = open_CtlDataset('../ctls/test10.ctl', returnctl=True)
 
 #%%
-from xgrads.xgrads import CtlDescriptor
+from xgrads.xgrads import CtlDescriptor, open_CtlDataset
 
-ctl1 = CtlDescriptor(file='./xgrads/ctls/test11.ctl')
-dset1, ctl = open_CtlDataset('./xgrads/ctls/test11.ctl', returnctl=True)
+ctl1 = CtlDescriptor(file='../ctls/test11.ctl')
+dset1, ctl = open_CtlDataset('../ctls/test11.ctl', returnctl=True)

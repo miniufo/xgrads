@@ -1,0 +1,274 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>3. Open binary datasets &mdash; xgrads 0.2.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/xgradsIcon.ico"/>
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="4. Convert to NetCDF file" href="4.convert_netcdf.html" />
+    <link rel="prev" title="2. Parse CTL files" href="2.parse_ctl.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> xgrads
+          
+
+          
+          </a>
+
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="1.introduction.html">1. General Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2.parse_ctl.html">2. Parse CTL files</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. Open binary datasets</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#loading-binary-data">Loading binary data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#single-ctl-file">Single CTL file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multiple-ctl-files">Multiple CTL files</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="4.convert_netcdf.html">4. Convert to NetCDF file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">xgrads APIs</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">xgrads</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>3. Open binary datasets</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/3.open_dataset.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="open-binary-datasets">
+<h1>3. Open binary datasets<a class="headerlink" href="#open-binary-datasets" title="Permalink to this headline">¶</a></h1>
+<hr class="docutils" />
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The most important part of <a class="reference external" href="https://github.com/miniufo/xgrads">xgrads</a> is to load the binary data (<strong>NOT</strong> all of them but the portion that is needed right now) into memory as <a class="reference external" href="https://docs.xarray.dev/en/stable/">xarray</a>.  This is built on correctly parsing the CTL files.</p>
+</section>
+<hr class="docutils" />
+<section id="loading-binary-data">
+<h2>Loading binary data<a class="headerlink" href="#loading-binary-data" title="Permalink to this headline">¶</a></h2>
+<section id="single-ctl-file">
+<h3>Single CTL file<a class="headerlink" href="#single-ctl-file" title="Permalink to this headline">¶</a></h3>
+<p>The loading of CTL dataset does not require an explicit parsing of CTL file.  So the reading is pretty simple:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">xgrads</span> <span class="kn">import</span> <span class="n">open_CtlDataset</span>
+
+<span class="n">dset</span> <span class="o">=</span> <span class="n">open_CtlDataset</span><span class="p">(</span><span class="s1">&#39;test10.ctl&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The output is in the view of <a class="reference external" href="https://docs.xarray.dev/en/stable/">xarray</a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>
+<span class="go">&lt;xarray.Dataset&gt;</span>
+<span class="go">Dimensions:    (time: 1, x: 360, y: 320)</span>
+<span class="go">Coordinates:</span>
+<span class="go">  * time       (time) datetime64[ns] 2019-01-01</span>
+<span class="go">  * y          (y) float64 0.0 1.5e+04 3e+04 ... 4.755e+06 4.77e+06 4.785e+06</span>
+<span class="go">  * x          (x) float64 0.0 1.5e+04 3e+04 ... 5.355e+06 5.37e+06 5.385e+06</span>
+<span class="go">Data variables:</span>
+<span class="go">    emi_index  (time, y, x) float32 dask.array&lt;chunksize=(1, 320, 360), meta=np.ndarray&gt;</span>
+<span class="go">Attributes:</span>
+<span class="go">    comment:  pm u2/m3</span>
+<span class="go">    storage:  99</span>
+<span class="go">    title:    CUACE_emi_index</span>
+<span class="go">    undef:    -9999.0</span>
+<span class="go">    pdef:     lcc</span>
+</pre></div>
+</div>
+<p>Note that the parsing of CTL file is implicitly done within <code class="docutils literal notranslate"><span class="pre">open_CtlDataset()</span></code>.  So if one wants both the <code class="docutils literal notranslate"><span class="pre">dset</span></code> and <code class="docutils literal notranslate"><span class="pre">ctl</span></code>, adding a kwarg <code class="docutils literal notranslate"><span class="pre">returnctl=True</span></code> will be OK:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">xgrads</span> <span class="kn">import</span> <span class="n">open_CtlDataset</span>
+
+<span class="n">dset</span><span class="p">,</span> <span class="n">ctl</span> <span class="o">=</span> <span class="n">open_CtlDataset</span><span class="p">(</span><span class="s1">&#39;test10.ctl&#39;</span><span class="p">,</span> <span class="n">returnctl</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ctl</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="multiple-ctl-files">
+<h3>Multiple CTL files<a class="headerlink" href="#multiple-ctl-files" title="Permalink to this headline">¶</a></h3>
+<p>If there are multiple CTL files describing similar spatial datasets of different time steps, one can also load them into a single dataset using <code class="docutils literal notranslate"><span class="pre">open_mfdataset()</span></code>.  This is similar to <a class="reference external" href="https://docs.xarray.dev/en/stable/">xarray</a>’s <code class="docutils literal notranslate"><span class="pre">open_mfdataset()</span></code>.  Usually, this should be done with the <a class="reference external" href="http://cola.gmu.edu/grads/gadoc/templates.html"><code class="docutils literal notranslate"><span class="pre">template</span></code></a> functionality of CTL.  But simutaneously open multiple CTL datasets is also easy because of the combining of the multiple dataset is easy by making use of <a class="reference external" href="https://docs.xarray.dev/en/stable/">xarray</a>’s <code class="docutils literal notranslate"><span class="pre">concat()</span></code> API.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">xgrads</span> <span class="kn">import</span> <span class="n">open_mfdataset</span>
+
+<span class="n">dset</span> <span class="o">=</span> <span class="n">open_mfdataset</span><span class="p">(</span><span class="s1">&#39;./test8_*.ctl&#39;</span><span class="p">,</span> <span class="n">parallel</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">ctl</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="4.convert_netcdf.html" class="btn btn-neutral float-right" title="4. Convert to NetCDF file" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="2.parse_ctl.html" class="btn btn-neutral float-left" title="2. Parse CTL files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2022, MiniUFO
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
