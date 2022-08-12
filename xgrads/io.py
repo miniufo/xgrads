@@ -114,16 +114,24 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
     if ctl.template:
         tcount = len(ctl.tdef.samples) # number of total time count
         tcPerf = []                    # number of time count per file
-
+        
+        has_missing = False
         for file in ctl.dsetPath:
-            fsize = os.path.getsize(file)
-
-            if fsize % ctl.tRecLength != 0:
-                raise Exception('incomplete file for ' + file +
-                                ' (not multiple of ' + str(ctl.tRecLength) +
-                                ' bytes)')
-
-            tcPerf.append(fsize // ctl.tRecLength)
+            if os.path.exists(file):
+                fsize = os.path.getsize(file)
+    
+                if fsize % ctl.tRecLength != 0:
+                    raise Exception('incomplete file for ' + file +
+                                    ' (not multiple of ' + str(ctl.tRecLength) +
+                                    ' bytes)')
+    
+                tcPerf.append(fsize // ctl.tRecLength)
+            else:
+                print(' warning: ' + file + ' is missing...')
+                has_missing = True
+        
+        if has_missing:
+            raise Exception('there are missing binary files')
 
         total_size = sum(tcPerf)
 

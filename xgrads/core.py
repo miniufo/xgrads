@@ -224,24 +224,27 @@ class CtlDescriptor(object):
         if strPos == -1:
             raise Exception('template is used in ctl but no % in dset')
         
-        endPos = len(dpath_str) - dpath_str[::-1].index('%') + 2
+        endPos = len(dpath_str) - dpath_str[::-1].find('.') - 1
+        # endPos = len(dpath_str) if endPos == -1 else endPos
         
         template = dpath_str[strPos:endPos]
         
-        tokens = []
-        for token in self._split_by_len(template, 3):
-            tokens.append(self._get_template_format(token))
-        
+        tokens = [self._get_template_format('%'+token)
+                  for token in filter(lambda x: x != '', template.split('%'))]
+        # tokens = []
+        # for token in filter(lambda x: x != '', template.split('%')):
+        #     tokens.append(self._get_template_format('%' + token))
         fmt = ''.join(tokens)
         
         fileList = []
         
         times = self.tdef.samples
+        base  = self._get_field(times[0])
         for l in range(len(times)):
             part = times[l].item().strftime(fmt)
             
             fname = dpath_str[:strPos] + part + dpath_str[endPos:]
-            fname = self._replace_forecast_template(fname, l)
+            fname = self._replace_forecast_template(fname, l, base)
             
             # remove duplicated file
             if fname not in fileList:
@@ -558,12 +561,13 @@ class CtlDescriptor(object):
             return '%H'
         elif part == '%n2':
             return '%M'
-        elif part in ['%f3', '%f2']: # this is not supported by strftime()
+        elif part in ['%f3', '%f2', '%fn2', '%fhn', '%fdhn']:
+            # this is not supported by strftime()
             return '_miniufo_' + part[1:]
         else:
             raise Exception('unsupported format: ' + part)
     
-    def _replace_forecast_template(self, fname, l):
+    def _replace_forecast_template(self, fname, l, base):
         """Replace forecast str %f as a template in dset
     
         Parameters
@@ -572,44 +576,82 @@ class CtlDescriptor(object):
             A given string of binary file.
         l: int
             Index of file in a template.
+        base: numpy.datetime64
+            Base time.
     
         Returns
         -------
         str
             A string after replacing the %f template.
         """
+        amount = l * self.incre
+        
+        days = base[..., 2]
+        hour = base[..., 3]
+        mins = base[..., 4]
+        
         if fname.find('_miniufo_f3') != -1:
-            dt_h = self.incre.astype('timedelta64[s]') / \
-                np.timedelta64(1, 'h')
-            fname = fname.replace('_miniufo_f3', '{0:03d}'.format(
-                        int(dt_h * l)))
+            dt = (amount.astype("timedelta64[h]") + hour).astype(int)
+            fname = fname.replace('_miniufo_f3', '{0:03d}'.format(dt))
         
         if fname.find('_miniufo_f2') != -1:
-            dt_h = self.incre.astype('timedelta64[s]') / \
-                np.timedelta64(1, 'h')
-            fname = fname.replace('_miniufo_f2', '{0:02d}'.format(
-                        int(dt_h * l)))
+            dt = (amount.astype("timedelta64[h]") + hour).astype(int)
+            fname = fname.replace('_miniufo_f2', '{0:02d}'.format(dt))
+        
+        if fname.find('_miniufo_fn2') != -1:
+            dt = (amount.astype("timedelta64[m]") + mins).astype(int)
+            fname = fname.replace('_miniufo_fn2', '{0:02d}'.format(dt))
+        
+        if fname.find('_miniufo_fhn') != -1:
+            dt_h = (amount.astype("timedelta64[h]") + hour).astype(int)
+            dt_m = (amount.astype("timedelta64[m]") + mins).astype(int) % 60
+            fname = fname.replace('_miniufo_fhn',
+                                  '{0:02d}'.format(dt_h)+'{0:02d}'.format(dt_m))
+        
+        if fname.find('_miniufo_fdhn') != -1:
+            dt_d = (amount.astype("timedelta64[D]") + days).astype(int)
+            dt_h = (amount.astype("timedelta64[h]") + hour).astype(int) % 24
+            dt_m = (amount.astype("timedelta64[m]") + mins).astype(int) % 60
+            fname = fname.replace('_miniufo_fdhn',
+                                  '{0:02d}'.format(dt_d)+
+                                  '{0:02d}'.format(dt_h)+
+                                  '{0:02d}'.format(dt_m))
         
         return fname
 
-    def _split_by_len(self, s, size):
-        """Split a string by a given size
+    def _get_field(self, datetime64):
+        """Get fields of a datetime64
+        
+        Convert array of datetime64 to a calendar array of
+        [year, month, day, hour, minute, seconds, microsecond]
+        with these quantites indexed on the last axis.
     
         Parameters
         ----------
-        s: str
-            A given string.
-        size: int
-            A given size.
+        datetime64: datetime64 array (...)
+            numpy.ndarray of datetimes of arbitrary shape
     
         Returns
         -------
-        list
-            The splitted strings.
+        cal : uint32 array (..., 7)
+            calendar array with last axis representing year, month, day, hour,
+            minute, second, microsecond
         """
-        chunks = len(s)
+        # allocate output 
+        out = np.empty(datetime64.shape + (7,), dtype="u4")
         
-        return [s[i:i + size] for i in range(0, chunks, size)]
+        # decompose calendar floors
+        Y, M, D, h, m, s = [datetime64.astype(f'M8[{x}]') for x in 'YMDhms']
+        
+        out[..., 0] = Y + 1970 # Gregorian Year
+        out[..., 1] = (M - Y) + 1 # month
+        out[..., 2] = (D - M) + 1 # dat
+        out[..., 3] = (datetime64 - D).astype('m8[h]' ) # hour
+        out[..., 4] = (datetime64 - h).astype('m8[m]' ) # minute
+        out[..., 5] = (datetime64 - m).astype('m8[s]' ) # second
+        out[..., 6] = (datetime64 - s).astype('m8[us]') # microsecond
+        
+        return out
 
 
     def _times_to_array(self, strTime, incre, tnum):

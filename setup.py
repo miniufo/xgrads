@@ -33,9 +33,9 @@ setup(
         'Programming Language :: Python :: 3.7'
     ],
 
-    keywords='grads xarray dask',
+    keywords='grads opengrads xarray dask',
 
-    packages=find_packages(exclude=['docs', 'tests', "ctls", "notebooks", "pics"]),
+    packages=find_packages(exclude=['docs', 'tests', "ctls", "notebooks", "pics", "private"]),
 
     install_requires=[
         "numpy",

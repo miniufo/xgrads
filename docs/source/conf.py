@@ -13,6 +13,7 @@
 import os
 import sys
 import datetime
+import xgrads
 sys.path.append(os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../../'))
 
@@ -24,9 +25,9 @@ copyright = f'{datetime.datetime.today().year}, MiniUFO'
 author = 'MiniUFO'
 
 # The short X.Y version
-version = '0.2'
+version = xgrads.__version__
 # The full version, including alpha/beta/rc tags
-release = '0.2.0'
+release = xgrads.__version__
 
 
 # -- General configuration ---------------------------------------------------
