@@ -915,8 +915,13 @@ class CtlVar(object):
         self.index  = 0
         self.strPos = 0
         
-        self.name, self.zcount, self.storage, self.comment = \
-            CtlVar.__reBlank.split(oneLineStr.strip(), maxsplit=3)
+        if len(CtlVar.__reBlank.split(oneLineStr.strip(), maxsplit=3))== 3:
+            self.name, self.zcount, self.storage = \
+                CtlVar.__reBlank.split(oneLineStr.strip(), maxsplit=3)
+            self.comment = self.name
+        else:
+            self.name, self.zcount, self.storage, self.comment = \
+                CtlVar.__reBlank.split(oneLineStr.strip(), maxsplit=3)
         
         self.zcount = int(self.zcount)
         
