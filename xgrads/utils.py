@@ -302,7 +302,7 @@ def __cWeights(dataS, lonS, latS, dataG, dimS, rad):
     yc, xc = dataG.shape
     sc     = len(dataS[dimS])
     
-    radR = 1.0 * 
+    radR = 1.0
     
     stntag = np.empty([sc], dtype=object)
     stndis = np.zeros([sc])
