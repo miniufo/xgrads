@@ -7,7 +7,6 @@ Copyright 2018. All rights reserved. Use is subject to license terms.
 """
 import xarray as xr
 import numpy as np
-import numba as nb
 
 _Rearth = 6371200
 
