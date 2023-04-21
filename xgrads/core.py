@@ -701,8 +701,21 @@ class CtlDescriptor(object):
         else:
             start = GrADStime_to_datetime64(strTime)
             intv  = GrADS_increment_to_timedelta64(incre)
-            
-            return np.arange(start, start + intv * tnum, intv)
+
+            if self.cal365Days:
+
+                lst = []
+                while len(lst) < tnum:
+                    isfeb29 = (start.item().day == 29) and (start.item().month == 2)
+                    if not isfeb29:
+                        lst.append(start)
+                    start += intv
+
+                return np.asarray(lst)
+
+            else:
+
+                return np.arange(start, start + intv * tnum, intv)
 
     def __repr__(self):
         """Print this class as a string"""
@@ -918,8 +931,13 @@ class CtlVar(object):
         self.index  = 0
         self.strPos = 0
         
-        self.name, self.zcount, self.storage, self.comment = \
-            CtlVar.__reBlank.split(oneLineStr.strip(), maxsplit=3)
+        if len(CtlVar.__reBlank.split(oneLineStr.strip(), maxsplit=3))== 3:
+            self.name, self.zcount, self.storage = \
+                CtlVar.__reBlank.split(oneLineStr.strip(), maxsplit=3)
+            self.comment = self.name
+        else:
+            self.name, self.zcount, self.storage, self.comment = \
+                CtlVar.__reBlank.split(oneLineStr.strip(), maxsplit=3)
         
         self.zcount = int(self.zcount)
         
