@@ -328,7 +328,6 @@ def __cWeights(dataS, lonS, latS, dataG, dimS, rad):
 		
 
 
-@nb.jit(nopython=True, cache=False)
 def __geodist(lon1, lon2, lat1, lat2):
     """Calculate great-circle distance on a sphere.
 
