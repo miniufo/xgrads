@@ -5,11 +5,9 @@ Created on 2020.08.01
 @author: MiniUFO
 Copyright 2018. All rights reserved. Use is subject to license terms.
 """
-import cartopy.crs as ccrs
 import xarray as xr
 import numpy as np
 import numba as nb
-from pyproj import Proj, transform
 
 _Rearth = 6371200
 
@@ -41,6 +39,8 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
     re: cartopy.ccrs
         Cartopy coordinate reference system object for plotting.
     """
+    import cartopy.crs as ccrs
+    
     pdef = ctl.pdef
     
     if globe == None: # default globe
@@ -56,6 +56,8 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
             return ccrs.PlateCarree(globe=globe)
         
         elif PROJ in ['lcc', 'lccr']:
+            from pyproj import Proj, transform
+
             if 'MOAD_CEN_LAT' in ctl.comments:
                 clat = float(ctl.comments['MOAD_CEN_LAT'])
                 
@@ -162,6 +164,8 @@ def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
         return lats, lons
     
     else:
+        from pyproj import Proj, transform
+        
         PROJ = pdef.proj
         
         if   PROJ is None:
