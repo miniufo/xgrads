@@ -13,9 +13,9 @@
 import os
 import sys
 import datetime
-import xgrads
 sys.path.append(os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../../'))
+import xgrads
 
 
 # -- Project information -----------------------------------------------------

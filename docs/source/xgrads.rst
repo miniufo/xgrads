@@ -1,8 +1,6 @@
 xgrads package
 ==============
 
-Submodules
-----------
 
 xgrads.core module
 ------------------

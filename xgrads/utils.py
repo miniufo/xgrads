@@ -8,6 +8,7 @@ Copyright 2018. All rights reserved. Use is subject to license terms.
 import cartopy.crs as ccrs
 import xarray as xr
 import numpy as np
+import numba as nb
 from pyproj import Proj, transform
 
 _Rearth = 6371200
@@ -17,6 +18,7 @@ Some map projection function useful for plotting
 """
 def get_data_projection(ctl, globe=None, Rearth=_Rearth):
     """Get Projection
+
     Return the data projection indicated in PDEF for plot using cartopy.
 
     Parameters
@@ -97,11 +99,12 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
 
 def interp_to_latlon(var, ctl):
     """Interpolate PDEF data onto lat/lon grids
+
     Interpolate the preprojected data onto lat/lon grids defined by ctl.
 
     Parameters
     ----------
-    ctl : str or CtlDescriptor
+    ctl: str or CtlDescriptor
         Either a string representing a `ctl` file or a CtlDescriptor.
     var: DataArray
         A variable defined at preprojected coordinates and
@@ -129,9 +132,9 @@ def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
 
     Parameters
     ----------
-    ctl : str or CtlDescriptor
+    ctl: str or CtlDescriptor
         Either a string representing a `ctl` file or a CtlDescriptor.
-    latlon : boolean
+    latlon: boolean
         Return lat/lon coordinates on PDEF grids if True, from PDEF grids;
         Return PDEF coordinates if False, from lat/lon grids.
     Rearth: float
@@ -230,5 +233,126 @@ def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
                                coords={'lat':lats, 'lon':lons})
         
         return reY, reX
+
+
+
+def oacressman(dataS, lonS, latS, lonG, latG, rads=[10, 7, 4, 2, 1], undef=np.nan):
+    """Objective analysis using Cressmen method (1959, MWR)
+    
+    The function tries to reproduce `oacres` in GrADS.  Note that:
+    1. The oacres function can be quite slow to execute, depending on grid
+       and station data density;
+    2. The scaling of the grid must be linear in lat-lon;
+    3. The Cressman Analysis scheme can be unstable if the grid density is
+       substantially higher than the station data density (ie, far more
+       grid points than station data points). In such cases, the analysis
+       can produce extrema in the grid values that are not realistic. It
+       is thus suggested that you examine the results of oacres and compare
+       them to the station data to insure they meet your needs.
+       
+    Reference:
+        https://journals.ametsoc.org/view/journals/mwre/87/10/1520-0493_1959_087_0367_aooas_2_0_co_2.xml
+    
+    Parameters
+    ----------
+    dataS: DataArray
+        A 1D DataArray representing the station data.
+    lonS: DataArray
+        A 1D array for longitudes of the stations.
+    latS: DataArray
+        A 1D array for latitudes of the stations.
+    lonG: DataArray or numpy.array or list
+        A 1D array for longitudes of the grid (should be linear).
+    latG: DataArray or numpy.array or list
+        A 1D array for latitudes of the grid (should be linear).
+    rads: float or list of floats
+        Radii at which the analysis is performed.  Default rads are the same
+        as those of GrADS.
+    undef: float
+        Undefined value is set if a grid has no station nearby.
+
+    Returns
+    -------
+    dataGrid: xarray.DataArray
+        Result of the objective analysis
+    """
+    dimS = dataS.dims[-1] # assume the rightmost dim as station
+    
+    if isinstance(lonG, list):
+        lonG = np.deg2rad(xr.DataArray(lonG, dims='lon', coords={'lon': lonG}))
+    if isinstance(latG, list):
+        latG = np.deg2rad(xr.DataArray(latG, dims='lat', coords={'lat': latG}))
+    
+    lonS = np.deg2rad(lonS)
+    latS = np.deg2rad(latS)
+    
+    dataG = latG  + lonG  # allocate one 2D slice
+    dataG = dataG - dataG + dataS.mean(dimS) # initialize to mean value
+    
+    yc, xc = dataG.shape
+    sc     = len(dataS[dimS])
+    
+    return dataG
+
+
+"""
+Helper (private) methods are defined below
+"""
+def __cWeights(dataS, lonS, latS, dataG, dimS, rad):
+    yc, xc = dataG.shape
+    sc     = len(dataS[dimS])
+    
+    radR = 1.0 * 
+    
+    stntag = np.empty([sc], dtype=object)
+    stndis = np.zeros([sc])
+    stnwei = np.zeros([sc])
+    
+    grdtag = np.empty([yc, xc], dtype=object)
+    grddis = np.zeros([yc, xc])
+    grdwei = np.zeros([yc, xc])
+    
+    # find grids
+    for s in range(sc):
+        for j in range(yc):
+            for i in range(xc):
+                if np.abs(lonS[s]-lonG[i])<radR and np.abs(latS[s]-latG[j])<radR:
+                    sdis = __geodist(lonG[i], latG[j], lonS[s], latS[s])
+                    
+                    if sdis<=rad:
+                        grdtag.append([j, i])
+                        grddis.append(sdis)
+		
+
+
+@nb.jit(nopython=True, cache=False)
+def __geodist(lon1, lon2, lat1, lat2):
+    """Calculate great-circle distance on a sphere.
+
+    Parameters
+    ----------
+    lon1: float
+        Longitude for point 1 in radian.
+    lon2: float
+        Longitude for point 2 in radian.
+    lat1: float
+        Latitude  for point 1 in radian.
+    lat2: float
+        Latitude  for point 2 in radian.
+
+    Returns
+    -------
+    dis: float
+        Great circle distance
+    """
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    
+    a = np.sin(dlat/2.0)**2.0 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2.0
+    
+    dis = 2.0 * np.arcsin(np.sqrt(a))
+    
+    return dis
+
 
 

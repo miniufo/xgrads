@@ -82,18 +82,20 @@ class CtlDescriptor(object):
     """
     def __init__(self, encoding='GBK', **kwargs):
         """Constructor
+
+        One of the keyword argument `file` or `content` should be specified.
         
         Parameters
         ----------
-        encoding: str
-            Encoding for the ctl file contents e.g., ['GBK', 'UTF-8'].
+        encoding: {'GBK', 'UTF-8'}, optional
+            Encoding for the ctl file contents.
         file: str
             The ctl path/file name.
         content: str
             A string representation for the ctl file contents.
 
         Returns
-        ----------
+        -------
         CtlDescriptor
             An object represents the ctl file
         """
@@ -167,6 +169,7 @@ class CtlDescriptor(object):
         self.parse(fileContent)
     
     def parse(self, fileContent):
+        """Parse file content as a multi-line str"""
         dpath_str = None
         
         for oneline in fileContent:
@@ -633,7 +636,7 @@ class CtlDescriptor(object):
     
         Returns
         -------
-        cal : uint32 array (..., 7)
+        cal: uint32 array (..., 7)
             calendar array with last axis representing year, month, day, hour,
             minute, second, microsecond
         """
@@ -670,7 +673,7 @@ class CtlDescriptor(object):
             Grads time increment in str format e.g., 1dy.
         
         Returns
-        ----------
+        -------
         numpy array of datetime64
             Times in datetime64 format
         """
@@ -957,11 +960,11 @@ def GrADStime_to_datetime(gradsTime):
     
     Parameters
     ----------
-    gradsTime : str
+    gradsTime: str
         Grads time in str format e.g., 00:00z01Jan2000.
     
     Returns
-    --------
+    -------
     datetime
         GrADS time in datetime format
     """
