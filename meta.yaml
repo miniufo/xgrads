@@ -1,0 +1,33 @@
+{% set data = load_setup_py_data() %}
+
+package:
+  name: "xgrads"
+  version: {{ data.get('version') }}
+
+source:
+  git_url: https://github.com/miniufo/xgrads
+
+build:
+  number: 3
+
+requirements:
+  host:
+    - python
+    - setuptools
+  build:
+    - python
+  run:
+    - python
+    - xarray
+    - dask
+    - numpy
+    - cartopy
+about:
+  home: https://github.com/miniufo/xgrads
+  license: MIT
+  license_file: LICENSE
+  summary: Parse and read ctl and associated binary file commonly used by GrADS into xarray
+
+extra:
+  recipe-maintainers:
+    - miniufo
