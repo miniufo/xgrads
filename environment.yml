@@ -1,11 +1,9 @@
 name: xgrads
 channels:
+  - miniufo
   - conda-forge
+  - default
 dependencies:
-  - python>=3.6
-  - numpy
-  - xarray
-  - dask
-  - cartopy
-  - pyproj
+  - anaconda-client
+  - conda-build
 
