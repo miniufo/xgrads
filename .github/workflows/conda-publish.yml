@@ -2,7 +2,7 @@ name: Publish to conda
 
 on:
   release:
-    types: ['published', 'released', 'prereleased']
+    types: ['released', 'prereleased']
 
 jobs:
   build-conda:
@@ -10,24 +10,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Conda environment creation and activation
-      uses: conda-incubator/setup-miniconda@v2
+    - name: publish-to-conda
+      uses: maxibor/conda-package-publish-action@v1.1
       with:
-        python-version: ${{ matrix.python-version }}
-        environment-file: environment.yml    # Path to the build conda environment
-        auto-update-conda: false
-        auto-activate-base: false
-        show-channel-urls: true
-    - name: Build and upload the conda packages
-      uses: uibcdf/action-build-and-upload-conda-packages@v1.2.0
-      with:
-        meta_yaml_dir: ./
-        python-version: ${{ matrix.python-version }} # Values previously defined in `matrix`
-        platform_linux-64: true
-        platform_osx-64: true
-        platform_win-64: true
-        user: uibcdf
-        label: auto
-        token: ${{ secrets.CONDA_API_TOKEN }} # Replace with the right name of your secret
+        subDir: './'
+        AnacondaToken: ${{ secrets.CONDA_API_TOKEN }}
 
 
