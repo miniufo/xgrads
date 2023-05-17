@@ -1,0 +1,37 @@
+name: Publish to conda
+
+on:
+  release:
+    types: ['published', 'released', 'prereleased']
+
+jobs:
+  build-conda:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Conda environment creation and activation
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        environment-file: devtools/conda-envs/build_env.yaml    # Path to the build conda environment
+        auto-update-conda: false
+        auto-activate-base: false
+        show-channel-urls: true
+    - name: Build and upload the conda packages
+      uses: uibcdf/action-build-and-upload-conda-packages@v1.2.0
+      with:
+        meta_yaml_dir: .
+        python-version: ${{ matrix.python-version }} # Values previously defined in `matrix`
+        platform_linux-64: true
+        platform_osx-64: true
+        platform_win-64: true
+        user: uibcdf
+        label: auto
+        token: ${{ secrets.CONDA_API_TOKEN }} # Replace with the right name of your secret
+
+
