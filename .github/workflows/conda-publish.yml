@@ -13,7 +13,7 @@ jobs:
     - name: publish-to-conda
       uses: maxibor/conda-package-publish-action@v1.1
       with:
-        subDir: './'
+        subDir: 'conda'
         AnacondaToken: ${{ secrets.CONDA_API_TOKEN }}
 
 
