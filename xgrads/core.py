@@ -22,63 +22,63 @@ class CtlDescriptor(object):
     
     Attributes
     ----------
-        dsetPath: str
-            dataset file
-        descPath: str
-            descriptor file
-        indxPath: str
-            index file (for GRIB file)
-        stnmPath: str
-            station map file (for station file)
-        
-        pdef: PDEF
-            projection-definition
-        tdef: Coordinate
-            time coordinate definition
-        zdef: Coordinate
-            z-coordinate definition
-        ydef: Coordinate
-            y-coordinate definition
-        xdef: Coordinate
-            x-coordinate definition
-        vdef: list of CtlVar
-            variables definition
-        
-        comments: list of str
-            list of global string comments
-        
-        zrev: bool
-            z-dimension reverse (i.e., from north to south)
-        yrev: bool
-            y-dimension reverse (i.e., from upper to lower levels)
-        
-        hasData: bool
-            whether the corresponding binary data file exist
-        vcount: int
-            variable count
-        
-        dtype: numpy.dtype
-            data type
-        periodicX: bool
-            whether xdef is periodic
-        
-        cal365Days: bool
-            whether the calendar is always 365 days (no leap year)
-        template: bool
-            whether it is a template for multiple binary files
-        sequential: bool
-            whether it is a sequential file (Fortran style)
-        byteOrder: str
-            byte order, ['little', 'big'] for little-endian or big-endian
-        storage: str
-            storage type, '99' or '-1,20' or others
-        
-        totalZCount: int
-            total number of horizontal slice
-        zRecLength: int
-            record length of a single horizontal slice
-        tRecLength: int
-            record length of a single time (including all variables)
+    dsetPath: str
+        dataset file
+    descPath: str
+        descriptor file
+    indxPath: str
+        index file (for GRIB file)
+    stnmPath: str
+        station map file (for station file)
+    
+    pdef: PDEF
+        projection-definition
+    tdef: Coordinate
+        time coordinate definition
+    zdef: Coordinate
+        z-coordinate definition
+    ydef: Coordinate
+        y-coordinate definition
+    xdef: Coordinate
+        x-coordinate definition
+    vdef: list of CtlVar
+        variables definition
+    
+    comments: list of str
+        list of global string comments
+    
+    zrev: bool
+        z-dimension reverse (i.e., from north to south)
+    yrev: bool
+        y-dimension reverse (i.e., from upper to lower levels)
+    
+    hasData: bool
+        whether the corresponding binary data file exist
+    vcount: int
+        variable count
+    
+    dtype: numpy.dtype
+        data type
+    periodicX: bool
+        whether xdef is periodic
+    
+    cal365Days: bool
+        whether the calendar is always 365 days (no leap year)
+    template: bool
+        whether it is a template for multiple binary files
+    sequential: bool
+        whether it is a sequential file (Fortran style)
+    byteOrder: str
+        byte order, ['little', 'big'] for little-endian or big-endian
+    storage: str
+        storage type, '99' or '-1,20' or others
+    
+    totalZCount: int
+        total number of horizontal slice
+    zRecLength: int
+        record length of a single horizontal slice
+    tRecLength: int
+        record length of a single time (including all variables)
     """
     def __init__(self, encoding='GBK', **kwargs):
         """Constructor
@@ -755,14 +755,14 @@ class PDEF(object):
     
     Attributes
     ----------
-        isize: int
-            size of native grid in x direction
-        jsize: int
-            size of native grid in y direction
-        proj: str
-            type of projection
-        lonref: str
-            reference longitude
+    isize: int
+        size of native grid in x direction
+    jsize: int
+        size of native grid in y direction
+    proj: str
+        type of projection
+    lonref: str
+        reference longitude
     """
     def __init__(self, oneline):
         """Constructor
@@ -825,16 +825,16 @@ class Coordinate(object):
     
     Attributes
     ----------
-        isLinear: bool
-            Steps are even or uneven
-        isIncre: int
-            Is increasing or decreasing
-        name: str
-            The name of the coordinate
-        samples: str
-            Discretized coordinate samples
-        delSamples: str
-            Finite difference between samples
+    isLinear: bool
+        Steps are even or uneven
+    isIncre: int
+        Is increasing or decreasing
+    name: str
+        The name of the coordinate
+    samples: str
+        Discretized coordinate samples
+    delSamples: str
+        Finite difference between samples
     """
     def __init__(self, name, samples):
         """Constructor
@@ -889,28 +889,28 @@ class CtlVar(object):
     
     Attributes
     ----------
-        tcount: int
-            T grid points
-        zcount: int
-            Z grid points
-        ycount: int
-            Y grid points
-        xcount: int
-            X grid points
-        undef: float
-            Undefined values
-        dependZ: bool
-            Whether the var depends on z
-        unit: str
-            Unit of the variable
-        name: str
-            Name of the variable
-        comment: str
-            A short comment
-        index: str
-            Index of this variable
-        strPos: str
-            Start position (in bytes) of this variable in the binary file
+    tcount: int
+        T grid points
+    zcount: int
+        Z grid points
+    ycount: int
+        Y grid points
+    xcount: int
+        X grid points
+    undef: float
+        Undefined values
+    dependZ: bool
+        Whether the var depends on z
+    unit: str
+        Unit of the variable
+    name: str
+        Name of the variable
+    comment: str
+        A short comment
+    index: str
+        Index of this variable
+    strPos: str
+        Start position (in bytes) of this variable in the binary file
     """
     __reBlank = re.compile(r'[\s\t]+')
     __reUnits = re.compile(r'\([^\(\)]+?\)')

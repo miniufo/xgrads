@@ -8,12 +8,16 @@ source:
   git_url: https://github.com/miniufo/xgrads
 
 build:
-  number: 3
+  number: 0
+  noarch: python
 
 requirements:
   host:
     - python
-    - setuptools
+    - xarray
+    - dask
+    - numpy
+    - pyproj
   build:
     - python
   run:
@@ -21,7 +25,7 @@ requirements:
     - xarray
     - dask
     - numpy
-    - cartopy
+    - pyproj
 about:
   home: https://github.com/miniufo/xgrads
   license: MIT

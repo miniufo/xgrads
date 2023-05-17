@@ -7,6 +7,7 @@ Copyright 2018. All rights reserved. Use is subject to license terms.
 """
 import xarray as xr
 import numpy as np
+import numba as nb
 
 _Rearth = 6371200
 
@@ -240,9 +241,10 @@ def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
 
 
 def oacressman(dataS, lonS, latS, lonG, latG, rads=[10, 7, 4, 2, 1], undef=np.nan):
-    """Objective analysis using Cressmen method (1959, MWR)
+    r"""Objective analysis using Cressmen method [1]_
     
     The function tries to reproduce `oacres` in GrADS.  Note that:
+        
     1. The oacres function can be quite slow to execute, depending on grid
        and station data density;
     2. The scaling of the grid must be linear in lat-lon;
@@ -252,9 +254,11 @@ def oacressman(dataS, lonS, latS, lonG, latG, rads=[10, 7, 4, 2, 1], undef=np.na
        can produce extrema in the grid values that are not realistic. It
        is thus suggested that you examine the results of oacres and compare
        them to the station data to insure they meet your needs.
-       
-    Reference:
-        https://journals.ametsoc.org/view/journals/mwre/87/10/1520-0493_1959_087_0367_aooas_2_0_co_2.xml
+   
+
+    .. [1] Cressmen G. P., 1959: An operational objective analysis system,
+       Monthly Weather Review, 87, 367–374.
+    
     
     Parameters
     ----------
@@ -295,37 +299,92 @@ def oacressman(dataS, lonS, latS, lonG, latG, rads=[10, 7, 4, 2, 1], undef=np.na
     yc, xc = dataG.shape
     sc     = len(dataS[dimS])
     
+    radRs = np.deg2rad((latG[-1] - latG[0]) / (yc - 1)) * np.array(rads)
+    
+    stntag, stndis, stnwei, grdtag, grddis, grdwei = \
+        __cWeights(dataS, lonS, latS, dimS, lonG, latG, radRs)
+    
     return dataG
 
 
 """
 Helper (private) methods are defined below
 """
-def __cWeights(dataS, lonS, latS, dataG, dimS, rad):
-    yc, xc = dataG.shape
+def __cWeights(dataS, lonS, latS, dimS, lonG, latG, rad, method='cressman'):
+    r"""calculate weights and store them
+    
+    Parameters
+    ----------
+    dataS: numpy.ndarray
+        A 1D DataArray representing the station data.
+    lonS: numpy.ndarray
+        A 1D array for longitudes of the stations.
+    latS: numpy.ndarray
+        A 1D array for latitudes of the stations.
+    dimS: str
+        Dimension name for station data.
+    lonG: numpy.ndarray
+        A 1D array for longitudes of the grid (should be linear).
+    latG: numpy.ndarray
+        A 1D array for latitudes of the grid (should be linear).
+    rad: float
+        Radius (in radian) at which the analysis is performed.
+
+    Returns
+    -------
+    dataGrid: xarray.DataArray
+        Result of the objective analysis
+    """
+    yc, xc = len(latG), len(lonG)
     sc     = len(dataS[dimS])
     
     radR = 1.0
     
     stntag = np.empty([sc], dtype=object)
-    stndis = np.zeros([sc])
-    stnwei = np.zeros([sc])
+    stndis = np.empty([sc], dtype=object)
+    stnwei = np.empty([sc], dtype=object)
     
     grdtag = np.empty([yc, xc], dtype=object)
-    grddis = np.zeros([yc, xc])
-    grdwei = np.zeros([yc, xc])
+    grddis = np.empty([yc, xc], dtype=object)
+    grdwei = np.empty([yc, xc], dtype=object)
     
     # find grids
     for s in range(sc):
+        ########## find grid points near to a station ##########
         for j in range(yc):
             for i in range(xc):
-                if np.abs(lonS[s]-lonG[i])<radR and np.abs(latS[s]-latG[j])<radR:
+                if np.abs(lonS[s]-lonG[i])<=radR*3 and \
+                   np.abs(latS[s]-latG[j])<=radR:
                     sdis = __geodist(lonG[i], latG[j], lonS[s], latS[s])
                     
                     if sdis<=rad:
-                        grdtag.append([j, i])
-                        grddis.append(sdis)
-		
+                        rad2 = rad  ** 2.0
+                        dis2 = sdis ** 2.0
+                        stntag[s].append([j, i])
+                        stndis[s].append(sdis)
+                        stnwei[s].append((rad2-dis2)/(rad2+dis2))
+    
+    # find stations
+    for j in range(yc):
+        for i in range(xc):
+            ########## find stations near to a grid point ##########
+            for s in range(sc):
+                if np.abs(lonS[s]-lonG[i])<=radR*3 and \
+                   np.abs(latS[s]-latG[j])<=radR:
+                    sdis = __geodist(lonG[i], latG[j], lonS[s], latS[s])
+                    
+                    if sdis<=rad:
+                        rad2 = rad  ** 2.0
+                        dis2 = sdis ** 2.0
+                        grdtag[j,i].append(s)
+                        grddis[j,i].append(sdis)
+                        grdwei[j,i].append((rad2-dis2)/(rad2+dis2))
+    
+    return stntag, stndis, stnwei, grdtag, grddis, grdwei
+
+
+
+
 
 
 def __geodist(lon1, lon2, lat1, lat2):
@@ -345,7 +404,7 @@ def __geodist(lon1, lon2, lat1, lat2):
     Returns
     -------
     dis: float
-        Great circle distance
+        Great circle distance (in radian)
     """
     dlon = lon2 - lon1
     dlat = lat2 - lat1
