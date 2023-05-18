@@ -7,7 +7,7 @@ Copyright 2018. All rights reserved. Use is subject to license terms.
 """
 import xarray as xr
 import numpy as np
-import numba as nb
+# import numba as nb
 
 _Rearth = 6371200
 
@@ -164,7 +164,7 @@ def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
         return lats, lons
     
     else:
-        from pyproj import Proj, transform
+        from pyproj import Proj #, transform
         
         PROJ = pdef.proj
         
