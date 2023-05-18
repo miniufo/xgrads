@@ -79,6 +79,9 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# conda
+conda/
+
 # IPython
 profile_default/
 ipython_config.py
