@@ -3,3 +3,4 @@ xarray
 dask
 pyproj
 cartopy
+GOES>=3.7.2
