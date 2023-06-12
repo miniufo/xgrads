@@ -56,21 +56,20 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
             return ccrs.PlateCarree(globe=globe)
         
         elif PROJ in ['lcc', 'lccr']:
-            from pyproj import Proj, transform
+            from pyproj import Transformer
 
             if 'MOAD_CEN_LAT' in ctl.comments:
                 clat = float(ctl.comments['MOAD_CEN_LAT'])
                 
-                wgs_proj = Proj(proj='latlong', datum='WGS84')
-                
-                tmp_proj = Proj(ccrs.LambertConformal(
+                tmp_proj = ccrs.LambertConformal(
                     globe=globe,
                     central_latitude=clat,
                     central_longitude=pdef.slon,
                     standard_parallels=(pdef.Struelat, pdef.Ntruelat)
-                ).proj4_init)
+                ).proj4_init
                 
-                e, n = transform(wgs_proj, tmp_proj, pdef.lonref, pdef.latref)
+                transformer = Transformer.from_crs('WGS84', tmp_proj)
+                e, n = transformer.transform(pdef.latref, pdef.lonref, errcheck=True)
                 
                 return ccrs.LambertConformal(globe=globe,
                           central_latitude   = clat,

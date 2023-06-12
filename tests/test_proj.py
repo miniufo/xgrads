@@ -6,68 +6,34 @@ Created on 2022.05.06
 Copyright 2018. All rights reserved. Use is subject to license terms.
 """
 #%%
-from xgrads.xgrads import open_CtlDataset, get_data_projection,\
-                          get_coordinates_from_PDEF
 import numpy as np
-
-# load data
-ctl_path = 'E:/OneDrive/Python/MyPack/xgrads/ctls/grid.d1.ctl'
-dset, ctl = open_CtlDataset(ctl_path, returnctl=True)
-
-Rearth = 6370000 # consistent with WRF
-
-crs = get_data_projection(ctl, Rearth=Rearth)
-
-#%% plot the data and compare to WRF coords
-import proplot as pplt
-
-fig, axes = pplt.subplots(nrows=1, ncols=2, figsize=(11, 6), proj=crs)
-
-x = dset.XLONG.squeeze()
-y = dset.XLAT.squeeze()
-
-ax = axes[0]
-m=ax.pcolormesh(dset.x, dset.y, dset.land.squeeze(), transform=crs)
-ax.set_title('crs')
-ax.colorbar(m, loc='b')
-
-
-ax = axes[1]
-m=ax.pcolormesh(x, y, dset.land.squeeze())
-ax.set_title('LatLon')
-ax.colorbar(m, loc='b')
-
-axes.format(abc='(a)', lonlim=[80.3, 124.1], latlim=[8,50.5])
-
-
-
-#%% get lat/lon and see the difference w.r.t WRF output
-lats, lons = get_coordinates_from_PDEF(ctl, Rearth=Rearth)
-
-XLAT, XLON = dset.XLAT.squeeze(), dset.XLONG.squeeze()
-
-fig, axes = pplt.subplots(nrows=1, ncols=2, figsize=(11, 6))
-
-ax = axes[0]
-m=ax.pcolormesh(XLON, XLAT, np.abs(lats-XLAT))
-ax.set_title('error of lats (deg)')
-ax.colorbar(m, loc='b')
-
-ax = axes[1]
-m=ax.pcolormesh(XLON, XLAT, np.abs(lons-XLON))
-ax.set_title('error of lons (deg)')
-ax.colorbar(m, loc='b')
-
-axes.format(abc='(a)')
-
-
-#%% write proj info into NetCDF
 from pyproj import CRS
+from xgrads import open_CtlDataset, get_data_projection,\
+                          get_coordinates_from_PDEF
 
-projcrs = CRS(crs.proj4_init)
+def test_llc_proj_wrf():
+    # load data
+    ctl_path = './ctls/grid.d1.ctl'
+    dset, ctl = open_CtlDataset(ctl_path, returnctl=True)
+    
+    Rearth = 6370000 # consistent with WRF
+    
+    # get lat/lon and see the difference w.r.t WRF output
+    lats, lons = get_coordinates_from_PDEF(ctl, Rearth=Rearth)
 
-cf = projcrs.to_cf()
-crs_new = projcrs.from_cf(cf)
-crs_new == projcrs
+    XLAT, XLON = dset.XLAT.squeeze(), dset.XLONG.squeeze()
+    
+    assert np.isclose(np.abs(lats-XLAT), 0, atol=5e-5).all()
+    assert np.isclose(np.abs(lons-XLON), 0, atol=5e-5).all()
+    
+    
+    # write proj info into NetCDF
+    crs = get_data_projection(ctl, Rearth=Rearth)
+    projcrs = CRS(crs.proj4_init)
+    
+    cf = projcrs.to_cf()
+    crs_new = projcrs.from_cf(cf)
+    
+    assert crs_new == projcrs
 
 
