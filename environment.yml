@@ -9,3 +9,4 @@ dependencies:
   - dask
   - pyproj
   - cartopy
+  - pooch

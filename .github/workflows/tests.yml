@@ -24,7 +24,7 @@ jobs:
           activate-environment: xgrads
           auto-activate-base: false
 
-      - name: Check something
+      - name: Check workspace
         run: echo ${{ github.workspace }}
 
       - name: List installed packages
