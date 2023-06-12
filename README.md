@@ -5,6 +5,7 @@
 [![Documentation Status](https://readthedocs.org/projects/xgrads/badge/?version=latest)](https://xgrads.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/xgrads.svg)](https://badge.fury.io/py/xgrads)
 ![Workflow](https://github.com/miniufo/xgrads/actions/workflows/python-publish.yml/badge.svg)
+[![pytest](https://github.com/miniufo/xgrads/actions/workflows/tests.yml/badge.svg)](https://github.com/miniufo/xgrads/actions/workflows/tests.yml)
 
 ![3D plot](https://raw.githubusercontent.com/miniufo/xgrads/master/pics/3D.png)
 
