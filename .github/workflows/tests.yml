@@ -21,7 +21,7 @@ jobs:
           miniconda-version: "latest"
           python-version: ${{ matrix.python-version }}
           environment-file: environment.yml
-          activate-environment: qqscale
+          activate-environment: xgrads
           auto-activate-base: false
 
       - name: Check something
