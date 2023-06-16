@@ -6,6 +6,7 @@
 [![PyPI version](https://badge.fury.io/py/xgrads.svg)](https://badge.fury.io/py/xgrads)
 ![Workflow](https://github.com/miniufo/xgrads/actions/workflows/python-publish.yml/badge.svg)
 [![pytest](https://github.com/miniufo/xgrads/actions/workflows/tests.yml/badge.svg)](https://github.com/miniufo/xgrads/actions/workflows/tests.yml)
+[![Build Status](https://app.travis-ci.com/miniufo/xgrads.svg?branch=master)](https://app.travis-ci.com/miniufo/xgrads)
 
 ![3D plot](https://raw.githubusercontent.com/miniufo/xgrads/master/pics/3D.png)
 
