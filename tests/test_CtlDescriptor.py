@@ -96,6 +96,7 @@ def test_coding():
     
     assert ctl.dsetPath == './ctls/intensity16070412.dat'
 
+
 def test_all_sample_ctls():
     paths = [
         './ctls/19855pt.grb',
@@ -120,4 +121,33 @@ def test_all_sample_ctls():
         else:
             assert re.all()
 
+
+def test_ensemble_ctls():
+    ctl1 = CtlDescriptor(file='./ctls/ecmf_medium_T2m1.ctl')
+    
+    assert len(ctl1.edef) == 3
+    
+    ens = ['c00', 'p01', 'p02']
+    
+    strPos = 0
+    for name, en in zip(ens, ctl1.edef):
+        assert name == en.name
+        assert en.strPos == strPos
+        strPos += en.tcount * ctl1.tRecLength
+    
+    ctl2 = CtlDescriptor(file='./ctls/ecmf_medium_T2m2.ctl')
+    
+    assert len(ctl2.edef) == 4
+    
+    enames = ['ensm', 'm01', 'm02', 'm03']
+    tcount = [41, 40, 39, 38]
+    codes  = [None, '3,1', None, '3,2']
+    
+    strPos = 0
+    for name, tc, code, en in zip(enames, tcount, codes, ctl2.edef):
+        assert name == en.name
+        assert tc   == en.tcount
+        assert code == en.codes
+        assert en.strPos == strPos
+        strPos += en.tcount * ctl1.tRecLength
 

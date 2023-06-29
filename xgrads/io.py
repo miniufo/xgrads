@@ -112,6 +112,9 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
                         '[CtlDescriptor or str] are allowed')
 
     if ctl.template:
+        if ctl.edef:
+            raise Exception('template and EDEF are not simultaneously supported yet')
+        
         tcount = len(ctl.tdef.samples) # number of total time count
         tcPerf = []                    # number of time count per file
         
@@ -158,7 +161,13 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
         binData = __read_template_as_dask(ctl, tcPerf_m)
 
     else:
-        expect = ctl.tRecLength * ctl.tdef.length()
+        if ctl.edef == None:
+            expect = ctl.tRecLength * ctl.tdef.length()
+        else:
+            expect = 0
+            for ens in ctl.edef:
+                expect += ens.tcount * ctl.tRecLength
+        
         actual = os.path.getsize(ctl.dsetPath)
 
         if expect != actual:
@@ -172,24 +181,41 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
     if ctl.pdef is None:
         for m, v in enumerate(ctl.vdef):
             if v.dependZ:
-                da = xr.DataArray(name=v.name, data=binData[m],
-                                  dims=['time', 'lev', 'lat', 'lon'],
-                                  coords={'time': ctl.tdef.samples[:],
-                                          'lev' : ctl.zdef.samples[:v.zcount],
-                                          'lat' : ctl.ydef.samples[:],
-                                          'lon' : ctl.xdef.samples[:]},
-                                  attrs={'comment': v.comment,
-                                         'storage': v.storage})
+                if ctl.edef:
+                    data = binData[m]
+                    dims = ['ens', 'time', 'lev', 'lat', 'lon']
+                    coords = {'ens' : [ens.name for ens in ctl.edef],
+                              'time': ctl.tdef.samples[:],
+                              'lev' : ctl.zdef.samples[:v.zcount],
+                              'lat' : ctl.ydef.samples[:],
+                              'lon' : ctl.xdef.samples[:]}
+                else:
+                    data = binData[m]
+                    dims = ['time', 'lev', 'lat', 'lon']
+                    coords = {'time': ctl.tdef.samples[:],
+                              'lev' : ctl.zdef.samples[:v.zcount],
+                              'lat' : ctl.ydef.samples[:],
+                              'lon' : ctl.xdef.samples[:]}
             else:
-                t, z, y, x = binData[m].shape
-                da = xr.DataArray(name=v.name,
-                                  data=binData[m].reshape((t,y,x)),
-                                  dims=['time', 'lat', 'lon'],
-                                  coords={'time': ctl.tdef.samples[:],
-                                          'lat' : ctl.ydef.samples[:],
-                                          'lon' : ctl.xdef.samples[:]},
-                                  attrs={'comment': v.comment,
-                                         'storage': v.storage})
+                if ctl.edef:
+                    e, t, z, y, x = binData[m].shape
+                    data = binData[m].reshape((e,t,y,x))
+                    dims = ['ens', 'time', 'lat', 'lon']
+                    coords = {'ens' : [ens.name for ens in ctl.edef],
+                              'time': ctl.tdef.samples[:],
+                              'lat' : ctl.ydef.samples[:],
+                              'lon' : ctl.xdef.samples[:]}
+                else:
+                    t, z, y, x = binData[m].shape
+                    data = binData[m].reshape((t,y,x))
+                    dims = ['time', 'lat', 'lon']
+                    coords = {'time': ctl.tdef.samples[:],
+                              'lat' : ctl.ydef.samples[:],
+                              'lon' : ctl.xdef.samples[:]}
+            
+            da = xr.DataArray(name=v.name, data=data, dims=dims, coords=coords,
+                              attrs={'comment': v.comment,
+                                     'storage': v.storage})
             variables.append(da)
 
     else:
@@ -208,25 +234,41 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
 
         for m, v in enumerate(ctl.vdef):
             if v.dependZ:
-                da = xr.DataArray(name=v.name, data=binData[m],
-                                  dims=['time', 'lev', 'y', 'x'],
-                                  coords={'time': ctl.tdef.samples[:],
-                                          'lev' : ctl.zdef.samples[:v.zcount],
-                                          'y' : ycoord,
-                                          'x' : xcoord},
-                                  attrs={'comment': v.comment,
-                                         'storage': v.storage})
+                if ctl.edef:
+                    data = binData[m]
+                    dims = ['ens', 'time', 'lev', 'y', 'x']
+                    coords = {'ens' : [ens.name for ens in ctl.edef],
+                              'time': ctl.tdef.samples[:],
+                              'lev' : ctl.zdef.samples[:v.zcount],
+                              'y'   : ycoord,
+                              'x'   : xcoord}
+                else:
+                    data = binData[m]
+                    dims = ['time', 'lev', 'y', 'x']
+                    coords = {'time': ctl.tdef.samples[:],
+                              'lev' : ctl.zdef.samples[:v.zcount],
+                              'y' : ycoord,
+                              'x' : xcoord}
             else:
-                t, z, y, x = binData[m].shape
-                da = xr.DataArray(name=v.name,
-                                  data=binData[m].reshape((t,y,x)),
-                                  dims=['time', 'y', 'x'],
-                                  coords={'time': ctl.tdef.samples[:],
-                                          'y' : ycoord,
-                                          'x' : xcoord},
-                                  attrs={'comment': v.comment,
-                                         'storage': v.storage})
+                if ctl.edef:
+                    e, t, z, y, x = binData[m].shape
+                    data = binData[m].reshape((e,t,y,x))
+                    dims = ['ens', 'time', 'y', 'x']
+                    coords = {'ens' : [ens.name for ens in ctl.edef],
+                              'time': ctl.tdef.samples[:],
+                              'y' : ycoord,
+                              'x' : xcoord}
+                else:
+                    t, z, y, x = binData[m].shape
+                    data = binData[m].reshape((t,y,x))
+                    dims = ['time', 'y', 'x']
+                    coords = {'time': ctl.tdef.samples[:],
+                              'y' : ycoord,
+                              'x' : xcoord}
 
+            da = xr.DataArray(name=v.name, data=data, dims=dims, coords=coords,
+                              attrs={'comment': v.comment,
+                                     'storage': v.storage})
             variables.append(da)
 
 #    variables = {v.name: (['time','lev','lat','lon'], binData[m])
@@ -288,39 +330,73 @@ def __read_as_dask(dd):
 
         if totalNum < (100 * 100 * 100 * 10): # about 40 MB, chunk all
             # print('small')
-            chunk = (t, v.zcount, y, x)
-            shape = (t, v.zcount, y, x)
-
-            dsk = {(name, 0, 0, 0, 0):
-                   (__read_var, dd.dsetPath, v, dd.tRecLength,
-                    None, None, dtype, sequentialSize)}
+            if dd.edef == None:
+                chunk = (t, v.zcount, y, x)
+                shape = (t, v.zcount, y, x)
+    
+                dsk = {(name, 0, 0, 0, 0):
+                       (__read_var, dd.dsetPath, v, 0, dd.tRecLength,
+                        None, None, dtype, sequentialSize)}
+            else:
+                e = len(dd.edef)
+                chunk = (1, t, v.zcount, y, x)
+                shape = (e, t, v.zcount, y, x)
+    
+                dsk = {(name, n, 0, 0, 0, 0):
+                       (__read_var, dd.dsetPath, v, ens.strPos, dd.tRecLength,
+                        None, None, dtype, sequentialSize)
+                       for n, ens in enumerate(dd.edef)}
 
             binData.append(dsa.Array(dsk, name, chunk,
                                      dtype=dtype, shape=shape))
 
         elif totalNum > (200 * 100 * 100 * 100): # about 800 MB, chunk 2D slice
             # print('large')
-            chunk = (1, 1, y, x)
-            shape = (t, v.zcount, y, x)
+            if dd.edef == None:
+                chunk = (1, 1, y, x)
+                shape = (t, v.zcount, y, x)
 
-            dsk = {(name, l, k, 0, 0):
-                   (__read_var, dd.dsetPath, v, dd.tRecLength,
-                    l, k, dtype, sequentialSize)
-                   for l in range(t)
-                   for k in range(v.zcount)}
+                dsk = {(name, l, k, 0, 0):
+                       (__read_var, dd.dsetPath, v, dd.tRecLength,
+                        l, k, dtype, sequentialSize)
+                       for l in range(t)
+                       for k in range(v.zcount)}
+            else:
+                e = len(dd.edef)
+                chunk = (1, 1, 1, y, x)
+                shape = (e, t, v.zcount, y, x)
+
+                dsk = {(name, n, l, k, 0, 0):
+                       (__read_var, dd.dsetPath, v, ens.strPos, dd.tRecLength,
+                        l, k, dtype, sequentialSize)
+                       for n, ens in enumerate(dd.edef)
+                       for l in range(t)
+                       for k in range(v.zcount)}
 
             binData.append(dsa.Array(dsk, name, chunk,
                                      dtype=dtype, shape=shape))
 
+
         else: # in between, chunk 3D slice
             # print('between')
-            chunk = (1, v.zcount, y, x)
-            shape = (t, v.zcount, y, x)
-
-            dsk = {(name, l, 0, 0, 0):
-                   (__read_var, dd.dsetPath, v, dd.tRecLength,
-                    l, None, dtype, sequentialSize)
-                   for l in range(t)}
+            if dd.edef == None:
+                chunk = (1, v.zcount, y, x)
+                shape = (t, v.zcount, y, x)
+    
+                dsk = {(name, l, 0, 0, 0):
+                       (__read_var, dd.dsetPath, v, dd.tRecLength,
+                        l, None, dtype, sequentialSize)
+                       for l in range(t)}
+            else:
+                e = len(dd.edef)
+                chunk = (1, 1, v.zcount, y, x)
+                shape = (e, t, v.zcount, y, x)
+    
+                dsk = {(name, n, l, 0, 0, 0):
+                       (__read_var, dd.dsetPath, v, ens.strPos, dd.tRecLength,
+                        l, None, dtype, sequentialSize)
+                       for n, ens in enumerate(dd.edef)
+                       for l in range(t)}
 
             binData.append(dsa.Array(dsk, name, chunk,
                                      dtype=dtype, shape=shape))
@@ -371,7 +447,7 @@ def __read_template_as_dask(dd, tcPerf):
             shape = (t, v.zcount, y, x)
 
             dsk = {(name, l + sum(tcPerf[:m]), k, 0, 0):
-                   (__read_var, f, v, dd.tRecLength,
+                   (__read_var, f, v, 0, dd.tRecLength,
                     l, k, dtype, sequentialSize)
                    for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
                    for l in range(tcPerf[m])
@@ -386,7 +462,7 @@ def __read_template_as_dask(dd, tcPerf):
             shape = (t, v.zcount, y, x)
 
             dsk = {(name, l + sum(tcPerf[:m]), 0, 0, 0):
-                   (__read_var, f, v, dd.tRecLength,
+                   (__read_var, f, v, 0, dd.tRecLength,
                     l, None, dtype, sequentialSize)
                    for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
                    for l in range(tcPerf[m])}
@@ -397,7 +473,7 @@ def __read_template_as_dask(dd, tcPerf):
     return binData
 
 
-def __read_var(file, var, tstride, tstep, zstep, dtype, sequentialSize=-1):
+def __read_var(file, var, epos, tstride, tstep, zstep, dtype, sequentialSize=-1):
     """Read a variable given the trange
 
     Parameters
@@ -406,6 +482,8 @@ def __read_var(file, var, tstride, tstep, zstep, dtype, sequentialSize=-1):
         A file from which data are read.
     var: CtlVar
         A variable that need to be read.
+    epos: int
+        Position of the ensemble dimension
     tstride: int
         Stride of a single time record.
     tstep: int
@@ -430,7 +508,7 @@ def __read_var(file, var, tstride, tstep, zstep, dtype, sequentialSize=-1):
                 seqShp = (var.tcount, var.zcount, sequentialSize)
             else:
                 seqShp = shape
-            pos   = var.strPos
+            pos   = var.strPos + epos
             return __read_continuous(file, pos, shape, dtype,
                                      sequentialShape=seqShp)
 
@@ -440,7 +518,7 @@ def __read_var(file, var, tstride, tstep, zstep, dtype, sequentialSize=-1):
                 seqShp = (1, var.zcount, sequentialSize)
             else:
                 seqShp = shape
-            pos   = var.strPos
+            pos   = var.strPos + epos
             return __read_continuous(file, pos, shape, dtype,
                                      sequentialShape=seqShp)
 
@@ -455,7 +533,7 @@ def __read_var(file, var, tstride, tstep, zstep, dtype, sequentialSize=-1):
                 zstri += 8
             else:
                 seqShp = shape
-            pos   = var.strPos + zstri * zstep
+            pos   = var.strPos + zstri * zstep + epos
             return __read_continuous(file, pos, shape, dtype,
                                      sequentialShape=seqShp)
 
@@ -467,7 +545,7 @@ def __read_var(file, var, tstride, tstep, zstep, dtype, sequentialSize=-1):
                 seqShp = (1, var.zcount, sequentialSize)
             else:
                 seqShp = shape
-            pos   = var.strPos
+            pos   = var.strPos + epos
             data  = []
 
             for l in range(var.tcount):
@@ -483,7 +561,7 @@ def __read_var(file, var, tstride, tstep, zstep, dtype, sequentialSize=-1):
                 seqShp = (1, var.zcount, sequentialSize)
             else:
                 seqShp = shape
-            pos   = var.strPos + tstride * tstep
+            pos   = var.strPos + tstride * tstep + epos
             data = __read_continuous(file, pos, shape, dtype,
                                      sequentialShape=seqShp)
 
@@ -500,7 +578,7 @@ def __read_var(file, var, tstride, tstep, zstep, dtype, sequentialSize=-1):
                 zstri += 8
             else:
                 seqShp = shape
-            pos   = var.strPos + tstride * tstep + zstri * zstep
+            pos   = var.strPos + tstride * tstep + zstri * zstep + epos
             return __read_continuous(file, pos, shape, dtype,
                                      sequentialShape=seqShp)
 

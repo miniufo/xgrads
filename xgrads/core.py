@@ -32,7 +32,7 @@ class CtlDescriptor(object):
         station map file (for station file)
     
     pdef: PDEF
-        projection-definition
+        Projection-definition
     tdef: Coordinate
         time coordinate definition
     zdef: Coordinate
@@ -42,7 +42,9 @@ class CtlDescriptor(object):
     xdef: Coordinate
         x-coordinate definition
     vdef: list of CtlVar
-        variables definition
+        Variables definition
+    edef: list of str
+        Ensemble definition
     
     comments: list of str
         list of global string comments
@@ -107,6 +109,7 @@ class CtlDescriptor(object):
         self.ydef = None
         self.xdef = None
         self.vdef = None
+        self.edef = None
         self.comments = {}
         
         self.dsetPath = ''
@@ -200,6 +203,8 @@ class CtlDescriptor(object):
                 self._processZDef(oneline, fileContent)
             elif oneline.lower().startswith('tdef'):
                 self._processTDef(oneline)
+            elif oneline.lower().startswith('edef'):
+                self._processEDef(oneline, fileContent)
             elif oneline.lower().startswith('vars'):
                 self._processVars(oneline, fileContent)
             elif oneline.lower().startswith('@ global string comment'):
@@ -220,6 +225,12 @@ class CtlDescriptor(object):
         
         if self.zrev:
             self.zdef = np.flip(self.zdef)
+        
+        if self.edef:
+            strPos = 0
+            for i, e in enumerate(self.edef):
+                self.edef[i] = self.edef[i]._replace(strPos=strPos)
+                strPos += e.tcount * self.tRecLength
     
     def _processDSets(self, dpath_str):
         strPos = dpath_str.find('%')
@@ -378,7 +389,7 @@ class CtlDescriptor(object):
                 index  += 1
             
             if count != znum:
-                raise Exception('not parse zdef correctly')
+                raise Exception('zdef not parsed correctly')
             
             self.zdef = Coordinate('zdef', np.array(values))
 
@@ -393,6 +404,68 @@ class CtlDescriptor(object):
         
         self.incre = GrADS_increment_to_timedelta64(tokens[4])
         self.tdef  = Coordinate('tdef', times)
+
+    def _processEDef(self, oneline, fileContent):
+        if not self.tdef:
+            raise Exception('edef should be after tdef')
+        
+        from collections import namedtuple
+        
+        Ensemble = namedtuple('Ensemble', ['name', 'tcount', 'tstart',
+                                           'codes', 'strPos'])
+        
+        tokens = oneline.lower().split()
+        enum   = int(tokens[1])
+        tdef   = self.tdef
+        index  = fileContent.index(oneline) + 1
+        
+        if len(tokens) > 2:
+            if tokens[2].lower() == 'names':
+                NAMES = True
+            else:
+                raise Exception(f'Expected str \'NAMEs\', but found {tokens[2]}')
+            
+            if NAMES:
+                enames = [i for i in tokens[3:]]
+                count  = len(enames)
+                
+                while count < enum:
+                    split = fileContent[index].split()
+                    enames += [v for v in split]
+                    count  += len(split)
+                    index  += 1
+                
+                if count != enum:
+                    raise Exception((f'edef not parsed correctly, count={count} '+
+                                     'while enum={enum}'))
+                
+                self.edef = [Ensemble(name, tdef.length(), tdef.samples[0], None, 0)
+                             for name in enames]
+        else:
+            tmp = []
+            for i in range(enum):
+                eline = fileContent[index + i].strip()
+                
+                if eline.lower() == 'endedef':
+                    raise Exception(f'not enough ensembles, need {enum}')
+                
+                tkns  = eline.split()
+                
+                name = tkns[0]
+                tcnt = int(tkns[1])
+                tstr = GrADStime_to_datetime(tkns[2])
+                code = None
+                
+                if len(tkns) >3:
+                    code = tkns[3]
+                    
+                if tcnt > tdef.length():
+                    raise Exception('Tcount in EDEF must be less than or equal' +
+                                    'to the Tcount in TDEF')
+                
+                tmp.append(Ensemble(name, tcnt, tstr, code, 0))
+            
+            self.edef = tmp
     
     def _processVars(self, oneline, fileContent):
         if (self.dtype != 'station' and 
@@ -721,6 +794,8 @@ class CtlDescriptor(object):
         """Print this class as a string"""
         vdef = np.array(self.vdef)
         pdef = self.pdef.proj if self.pdef is not None else ''
+        edef = [f'Ensem: {e.name}, {e.tcount}, {e.tstart}, {e.codes}, {e.strPos}'
+                for e in self.edef]
         
         return \
             '   dsetPath: ' + str(self.dsetPath)  + '\n'\
@@ -741,6 +816,7 @@ class CtlDescriptor(object):
             '       ydef: ' + str(self.ydef)      + '\n'\
             '       zdef: ' + str(self.zdef)      + '\n'\
             '       tdef: ' + str(self.tdef)      + '\n'\
+            '       edef: ' + str(edef)           + '\n'\
             '       pdef: ' + str(pdef)           + '\n'\
             '       vdef: ' + str(vdef)
 
@@ -967,7 +1043,6 @@ class CtlVar(object):
                 .format(self.name,
                         self.tcount, self.zcount,
                         self.ycount, self.xcount)
-
 
 
 """

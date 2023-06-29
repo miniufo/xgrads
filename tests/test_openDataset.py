@@ -5,8 +5,9 @@ Created on 2020.03.02
 @author: MiniUFO
 Copyright 2018. All rights reserved. Use is subject to license terms.
 """
-from xgrads import open_CtlDataset, open_mfdataset
+import numpy as np
 import xarray as xr
+from xgrads import open_CtlDataset, open_mfdataset
 
 
 def test_template():
@@ -43,4 +44,10 @@ def test_template():
     assert (dset1.y == dset2.y).all()
     assert (dset1.air[0] == dset2.air).all()
 
-
+def test_ensemble():
+    dset1 = open_CtlDataset('./ctls/ecmf_medium_T2m1.ctl')
+    
+    expected = np.array([2.011963 , 1.1813354, 1.1660767])
+    
+    # check several ensemble values
+    assert np.isclose(dset1.t2[:,-1,-1,-1], expected).all()
