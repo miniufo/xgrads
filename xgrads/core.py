@@ -794,8 +794,12 @@ class CtlDescriptor(object):
         """Print this class as a string"""
         vdef = np.array(self.vdef)
         pdef = self.pdef.proj if self.pdef is not None else ''
-        edef = [f'Ensem: {e.name}, {e.tcount}, {e.tstart}, {e.codes}, {e.strPos}'
-                for e in self.edef]
+        
+        if self.edef is not None:
+            edef = [f'Ensem: {e.name}, {e.tcount}, {e.tstart}, {e.codes}, {e.strPos}'
+                    for e in self.edef]
+        else:
+            edef = 'None'
         
         return \
             '   dsetPath: ' + str(self.dsetPath)  + '\n'\

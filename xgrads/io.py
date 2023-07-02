@@ -357,7 +357,7 @@ def __read_as_dask(dd):
                 shape = (t, v.zcount, y, x)
 
                 dsk = {(name, l, k, 0, 0):
-                       (__read_var, dd.dsetPath, v, dd.tRecLength,
+                       (__read_var, dd.dsetPath, v, 0, dd.tRecLength,
                         l, k, dtype, sequentialSize)
                        for l in range(t)
                        for k in range(v.zcount)}
@@ -384,7 +384,7 @@ def __read_as_dask(dd):
                 shape = (t, v.zcount, y, x)
     
                 dsk = {(name, l, 0, 0, 0):
-                       (__read_var, dd.dsetPath, v, dd.tRecLength,
+                       (__read_var, dd.dsetPath, v, 0, dd.tRecLength,
                         l, None, dtype, sequentialSize)
                        for l in range(t)}
             else:
