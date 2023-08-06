@@ -7,18 +7,20 @@ Copyright 2018. All rights reserved. Use is subject to license terms.
 """
 import xarray as xr
 import numpy as np
-# import numba as nb
+import numba as nb
+from numba.typed import List
 
 _Rearth = 6371200
+
 
 """
 Some map projection function useful for plotting
 """
 def get_data_projection(ctl, globe=None, Rearth=_Rearth):
     """Get Projection
-
+    
     Return the data projection indicated in PDEF for plot using cartopy.
-
+    
     Parameters
     ----------
     ctl: str or CtlDescriptor
@@ -33,7 +35,7 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
         Thanks to singledoggy at
         https://github.com/miniufo/xgrads/issues/32
         https://github.com/miniufo/xgrads/issues/37
-
+    
     Returns
     -------
     re: cartopy.ccrs
@@ -57,7 +59,7 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
         
         elif PROJ in ['lcc', 'lccr']:
             from pyproj import Transformer
-
+            
             if 'MOAD_CEN_LAT' in ctl.comments:
                 clat = float(ctl.comments['MOAD_CEN_LAT'])
                 
@@ -100,9 +102,9 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
 
 def interp_to_latlon(var, ctl):
     """Interpolate PDEF data onto lat/lon grids
-
+    
     Interpolate the preprojected data onto lat/lon grids defined by ctl.
-
+    
     Parameters
     ----------
     ctl: str or CtlDescriptor
@@ -110,7 +112,7 @@ def interp_to_latlon(var, ctl):
     var: DataArray
         A variable defined at preprojected coordinates and
         need to be interpolated onto lat/lon grids.
-
+    
     Returns
     -------
     re: xarray.DataArray
@@ -124,13 +126,12 @@ def interp_to_latlon(var, ctl):
     ypos, xpos = get_coordinates_from_PDEF(ctl, latlon=False)
     
     return var.interp(dict(y=ypos, x=xpos))
-    
 
 
 def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
     """
     Calculate coordinates based on the PDEF information.
-
+    
     Parameters
     ----------
     ctl: str or CtlDescriptor
@@ -145,7 +146,7 @@ def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
         Thanks to singledoggy at
         https://github.com/miniufo/xgrads/issues/32
         https://github.com/miniufo/xgrads/issues/37
-
+    
     Returns
     -------
     y, x: xarray.DataArray, xarray.DataArray
@@ -238,12 +239,12 @@ def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
         return reY, reX
 
 
-
-def oacressman(dataS, lonS, latS, lonG, latG, rads=[10, 7, 4, 2, 1], undef=np.nan):
+def oacressman(dataS, lonS, latS, dimS, lonG, latG,
+               rads=[10, 7, 4, 2, 1], undef=-9.99e8, method='cressman'):
     r"""Objective analysis using Cressmen method [1]_
     
     The function tries to reproduce `oacres` in GrADS.  Note that:
-        
+    
     1. The oacres function can be quite slow to execute, depending on grid
        and station data density;
     2. The scaling of the grid must be linear in lat-lon;
@@ -253,8 +254,8 @@ def oacressman(dataS, lonS, latS, lonG, latG, rads=[10, 7, 4, 2, 1], undef=np.na
        can produce extrema in the grid values that are not realistic. It
        is thus suggested that you examine the results of oacres and compare
        them to the station data to insure they meet your needs.
-   
-
+    
+    
     .. [1] Cressmen G. P., 1959: An operational objective analysis system,
        Monthly Weather Review, 87, 367–374.
     
@@ -267,6 +268,8 @@ def oacressman(dataS, lonS, latS, lonG, latG, rads=[10, 7, 4, 2, 1], undef=np.na
         A 1D array for longitudes of the stations.
     latS: DataArray
         A 1D array for latitudes of the stations.
+    dimS: str
+        Name of the station dimension.
     lonG: DataArray or numpy.array or list
         A 1D array for longitudes of the grid (should be linear).
     latG: DataArray or numpy.array or list
@@ -276,40 +279,76 @@ def oacressman(dataS, lonS, latS, lonG, latG, rads=[10, 7, 4, 2, 1], undef=np.na
         as those of GrADS.
     undef: float
         Undefined value is set if a grid has no station nearby.
-
+    method: str
+        Methods of calculating weights, should one of ['cressman', 'exp'].
+    
     Returns
     -------
     dataGrid: xarray.DataArray
-        Result of the objective analysis
+        Result of the objective analysis.
+    wei: xarray.DataArray
+        Normalized total weights.
     """
-    dimS = dataS.dims[-1] # assume the rightmost dim as station
-    
     if isinstance(lonG, list):
-        lonG = np.deg2rad(xr.DataArray(lonG, dims='lon', coords={'lon': lonG}))
+        lonG = xr.DataArray(lonG, dims='lon', coords={'lon': lonG})
     if isinstance(latG, list):
-        latG = np.deg2rad(xr.DataArray(latG, dims='lat', coords={'lat': latG}))
+        latG = xr.DataArray(latG, dims='lat', coords={'lat': latG})
     
     lonS = np.deg2rad(lonS)
     latS = np.deg2rad(latS)
+    lonG = np.deg2rad(lonG)
+    latG = np.deg2rad(latG)
     
+    meanS = dataS.mean(dimS)
     dataG = latG  + lonG  # allocate one 2D slice
-    dataG = dataG - dataG + dataS.mean(dimS) # initialize to mean value
+    dataG = dataG - dataG + meanS # initialize to mean value
+    weisG = dataG - dataG # all set zeros
     
-    yc, xc = dataG.shape
-    sc     = len(dataS[dimS])
+    radRs = ((latG[-1] - latG[0]) / (len(latG) - 1)).values * np.array(rads)
     
-    radRs = np.deg2rad((latG[-1] - latG[0]) / (yc - 1)) * np.array(rads)
+    tmp1, tmp2 = dataG, weisG
+    for rad, RR in zip(radRs, rads):
+        print(f'processing {np.rad2deg(rad):4.1f}-deg ({RR} grids) radius...')
+        tmp1, tmp2 = xr.apply_ufunc(__slice, dataS, lonS, latS, lonG, latG,
+                                    tmp1, tmp2, rad, undef,
+                                    kwargs={'method':method},
+                                    dask='allow',
+                                    input_core_dims=[[dimS], [dimS], [dimS],
+                                                     ['lon'], ['lat'],
+                                                     ['lat','lon'],
+                                                     ['lat','lon'], [], []],
+                                    vectorize=True,
+                                    output_core_dims=[['lat','lon'],
+                                                      ['lat','lon']])
     
-    stntag, stndis, stnwei, grdtag, grddis, grdwei = \
-        __cWeights(dataS, lonS, latS, dimS, lonG, latG, radRs)
+    re = tmp1.where(tmp1!=meanS) / len(radRs)
+    re = re.where(~np.isnan(re), undef)
     
-    return dataG
+    return re.rename(dataG.name), (tmp2/tmp2.max()).rename('wei')
 
 
 """
 Helper (private) methods are defined below
 """
-def __cWeights(dataS, lonS, latS, dimS, lonG, latG, rad, method='cressman'):
+def __slice(dataS, lonS, latS, lonG, latG, dataG, weis,
+            rad, undef, method='cressman'):
+    #print(dataS.shape, lonS.shape, latS.shape, lonG.shape,
+    #      latG.shape, dataG.shape, rad, undef)
+    if method == 'cressman':
+        func_wei = __weight_cressman
+    else:
+        func_wei = __weight_exp
+    
+    stntag, stnwei, grdtag, grdwei = __cWeights(dataS, lonS, latS, lonG, latG,
+                                                rad, func_wei)
+    
+    tmp = __interp_to_stations(dataG, stntag, stnwei, dataS, undef)
+    
+    return __interp_to_grids(dataS-tmp, grdtag, grdwei, dataG, weis, rad, undef)
+
+
+@nb.jit(nopython=True, cache=False)
+def __cWeights(dataS, lonS, latS, lonG, latG, rad, func_wei):
     r"""calculate weights and store them
     
     Parameters
@@ -320,75 +359,143 @@ def __cWeights(dataS, lonS, latS, dimS, lonG, latG, rad, method='cressman'):
         A 1D array for longitudes of the stations.
     latS: numpy.ndarray
         A 1D array for latitudes of the stations.
-    dimS: str
-        Dimension name for station data.
     lonG: numpy.ndarray
         A 1D array for longitudes of the grid (should be linear).
     latG: numpy.ndarray
         A 1D array for latitudes of the grid (should be linear).
     rad: float
         Radius (in radian) at which the analysis is performed.
-
+    
     Returns
     -------
-    dataGrid: xarray.DataArray
-        Result of the objective analysis
+    stntag: list
+        Indices of grid points near a station
+    stnwei: list
+        Weights of grid points near a station
+    grdtag: list
+        Indices of stations near a grid point
+    grdwei: list
+        Weights of stations near a grid point
     """
     yc, xc = len(latG), len(lonG)
-    sc     = len(dataS[dimS])
+    sc     = len(dataS)
     
-    radR = 1.0
-    
-    stntag = np.empty([sc], dtype=object)
-    stndis = np.empty([sc], dtype=object)
-    stnwei = np.empty([sc], dtype=object)
-    
-    grdtag = np.empty([yc, xc], dtype=object)
-    grddis = np.empty([yc, xc], dtype=object)
-    grdwei = np.empty([yc, xc], dtype=object)
+    stntag = List() # station indices within the radius
+    stnwei = List() # weight coefficient of the stations
+    grdtag = List() # grid indices within the radius
+    grdwei = List() # weight coefficient of the grids
     
     # find grids
     for s in range(sc):
+        tmp1 = [[0, 0]] # with a default one for numba to determine the type
+        tmp2 = [np.nan]
         ########## find grid points near to a station ##########
         for j in range(yc):
             for i in range(xc):
-                if np.abs(lonS[s]-lonG[i])<=radR*3 and \
-                   np.abs(latS[s]-latG[j])<=radR:
-                    sdis = __geodist(lonG[i], latG[j], lonS[s], latS[s])
+                if np.abs(lonS[s]-lonG[i])<=rad*2 and \
+                    np.abs(latS[s]-latG[j])<=rad:
+                    sdis = __geodist(lonG[i], lonS[s], latG[j], latS[s])
                     
-                    if sdis<=rad:
+                    if sdis < rad:
                         rad2 = rad  ** 2.0
                         dis2 = sdis ** 2.0
-                        stntag[s].append([j, i])
-                        stndis[s].append(sdis)
-                        stnwei[s].append((rad2-dis2)/(rad2+dis2))
+                        tmp1.append([j, i])
+                        tmp2.append(func_wei(rad2, dis2))
+        
+        stntag.append(np.array(tmp1))
+        stnwei.append(np.array(tmp2))
     
     # find stations
     for j in range(yc):
         for i in range(xc):
+            tmp1 = [0]  # with a default one for numba to determine the type
+            tmp2 = [np.nan]
             ########## find stations near to a grid point ##########
             for s in range(sc):
-                if np.abs(lonS[s]-lonG[i])<=radR*3 and \
-                   np.abs(latS[s]-latG[j])<=radR:
-                    sdis = __geodist(lonG[i], latG[j], lonS[s], latS[s])
+                if np.abs(lonS[s]-lonG[i])<=rad*2 and \
+                    np.abs(latS[s]-latG[j])<=rad:
+                    sdis = __geodist(lonG[i], lonS[s], latG[j], latS[s])
                     
-                    if sdis<=rad:
+                    if sdis < rad:
                         rad2 = rad  ** 2.0
                         dis2 = sdis ** 2.0
-                        grdtag[j,i].append(s)
-                        grddis[j,i].append(sdis)
-                        grdwei[j,i].append((rad2-dis2)/(rad2+dis2))
+                        tmp1.append(s)
+                        tmp2.append(func_wei(rad2, dis2))
+            
+            grdtag.append(np.array(tmp1))
+            grdwei.append(np.array(tmp2))
     
-    return stntag, stndis, stnwei, grdtag, grddis, grdwei
+    return stntag, stnwei, grdtag, grdwei
 
 
+@nb.jit(nopython=True, cache=False)
+def __interp_to_stations(dataG, stntag, stnwei, dataS, undef=-9.99e8):
+    x = dataS.shape[0]
+    
+    re = np.zeros(dataS.shape)
+    
+    for i in range(x):
+        sum, wsum = 0, 0
+        gc = len(stntag[i])
+        
+        if gc > 1:
+            tags = stntag[i]
+            weis = stnwei[i]
+            for m in range(1, tags.shape[0]): # skip first value
+                w = weis[m]
+                jj, ii = tags[m]
+
+                if dataG[jj, ii] != undef:
+                    sum  += w * dataG[jj, ii]
+                    wsum += w
+            if wsum != 0:
+                re[i] = sum / wsum
+            else:
+                re[i] = undef
+        else:
+            re[i] = undef
+    
+    return re
 
 
+@nb.jit(nopython=True, cache=False)
+def __interp_to_grids(dataS, grdtag, grdwei, dataG, weisG, rad, undef=-9.99e8):
+    y, x = dataG.shape
+
+    re = dataG.copy()
+    we = weisG.copy()
+    
+    for j in range(y):
+        for i in range(x):
+            sum, wsum = 0, 0
+            idx = j * x + i
+            sc  = len(grdtag[idx])
+            
+            if sc > 1:
+                tags = grdtag[idx]
+                weis = grdwei[idx]
+                for m in range(1, tags.shape[0]): # skip first value
+                    w = weis[m]
+                    t = tags[m]
+
+                    if dataS[t] != undef:
+                        sum  += w * dataS[t]
+                        wsum += w
+                
+                if wsum != 0:
+                    we[j,i] += wsum
+                    if re[j,i] != undef:
+                        re[j,i] += sum / wsum
+                    else:
+                        re[j,i] = sum / wsum
+    
+    return re, we
 
 
+@nb.jit(nopython=True, cache=False)
 def __geodist(lon1, lon2, lat1, lat2):
-    """Calculate great-circle distance on a sphere.
-
+    """Calculate great-circle distance on a sphere of radius 1.
+    
     Parameters
     ----------
     lon1: float
@@ -399,7 +506,7 @@ def __geodist(lon1, lon2, lat1, lat2):
         Latitude  for point 1 in radian.
     lat2: float
         Latitude  for point 2 in radian.
-
+    
     Returns
     -------
     dis: float
@@ -414,5 +521,14 @@ def __geodist(lon1, lon2, lat1, lat2):
     
     return dis
 
+
+@nb.jit(nopython=True, cache=False)
+def __weight_cressman(rad2, dis2):
+    return (rad2-dis2)/(rad2+dis2)
+
+
+@nb.jit(nopython=True, cache=False)
+def __weight_exp(rad2, dis2):
+    return np.exp(-dis2/(2.0*rad2))
 
 
