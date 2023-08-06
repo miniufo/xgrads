@@ -4,7 +4,7 @@
 ![GitHub](https://img.shields.io/github/license/miniufo/xgrads)
 [![Documentation Status](https://readthedocs.org/projects/xgrads/badge/?version=latest)](https://xgrads.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/xgrads.svg)](https://badge.fury.io/py/xgrads)
-![Workflow](https://github.com/miniufo/xgrads/actions/workflows/python-publish.yml/badge.svg)
+[![Publish to PyPI](https://github.com/miniufo/xgrads/actions/workflows/PyPI-publish.yml/badge.svg)](https://github.com/miniufo/xgrads/actions/workflows/PyPI-publish.yml)
 [![pytest](https://github.com/miniufo/xgrads/actions/workflows/tests.yml/badge.svg)](https://github.com/miniufo/xgrads/actions/workflows/tests.yml)
 [![Build Status](https://app.travis-ci.com/miniufo/xgrads.svg?branch=master)](https://app.travis-ci.com/miniufo/xgrads)
 
