@@ -4,3 +4,4 @@ numba
 nbsphinx
 numpydoc
 Cython
+pyproj
