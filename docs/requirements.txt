@@ -1,3 +1,6 @@
 xarray
 dask
 numba
+nbsphinx
+numpydoc
+
