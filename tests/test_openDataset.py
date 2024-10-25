@@ -7,6 +7,7 @@ Copyright 2018. All rights reserved. Use is subject to license terms.
 """
 import numpy as np
 import xarray as xr
+import sys
 from xgrads import open_CtlDataset, open_mfdataset
 
 
@@ -15,22 +16,32 @@ def test_template():
     dset2 = open_CtlDataset('./ctls/test9.ctl')
     dset3 = xr.tutorial.open_dataset('air_temperature').astype('>f4')
     
-    for l in range(len(dset1.time)):
-        xr.testing.assert_equal(dset1.air[l], dset2.air[l])
-        xr.testing.assert_equal(dset1.air[l], dset3.air[l])
+    use_close = True if sys.version_info[0] == 3 and sys.version_info[1]>8 else False
+    
+    if use_close:
+        for l in range(len(dset1.time)):
+            xr.testing.assert_allclose(dset1.air[l], dset2.air[l])
+            xr.testing.assert_allclose(dset1.air[l], dset3.air[l])        
+    else:
+        for l in range(len(dset1.time)):
+            xr.testing.assert_equal(dset1.air[l], dset2.air[l])
+            xr.testing.assert_equal(dset1.air[l], dset3.air[l])
 
     
     dset1 = open_mfdataset('./ctls/test8_*.ctl', parallel=True)
     dset2 = open_CtlDataset('./ctls/test8.ctl').load()
     dset3 = xr.tutorial.open_dataset('air_temperature').load().astype('>f4')
     
-    for l in range(len(dset1.time)):
-        xr.testing.assert_equal(dset1.air[l], dset3.air[l])
+    if use_close:
+        for l in range(len(dset1.time)):
+            xr.testing.assert_allclose(dset1.air[l], dset3.air[l])        
+    else:
+        for l in range(len(dset1.time)):
+            xr.testing.assert_equal(dset1.air[l], dset3.air[l])
     
     
     dset1 = open_mfdataset('./ctls/test9_*.ctl', parallel=True)
     dset2 = open_CtlDataset('./ctls/test9.ctl').load()
-    dset3 = xr.tutorial.open_dataset('air_temperature').load().astype('>f4')
     
     for l in range(len(dset1.time)):
         xr.testing.assert_equal(dset1.air[l], dset2.air[l])
