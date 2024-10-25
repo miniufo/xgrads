@@ -275,13 +275,13 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
 #                 for m,v in enumerate(ctl.vdef)}
 
     dset = xr.merge(variables)
-
+    
     dset.attrs['title'] = ctl.title
     dset.attrs['undef'] = ctl.undef
     dset.attrs['pdef' ] = 'None'
 
     if ctl.pdef:
-        dset.attrs['pdef' ] = ctl.pdef.proj
+        dset.attrs['pdef'] = ctl.pdef.proj
 
     if returnctl:
         return dset, ctl

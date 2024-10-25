@@ -168,6 +168,9 @@ class CtlDescriptor(object):
                     fileContent[i] = line.replace('^',
                                        os.path.dirname(abspath))
         
+        # trim down all the spaces and tabs at the beginning and end
+        fileContent = [line.strip() for line in fileContent]
+        
         self.descPath=abspath
         self.parse(fileContent)
     
@@ -176,40 +179,42 @@ class CtlDescriptor(object):
         dpath_str = None
         
         for oneline in fileContent:
-            if   oneline.lower().startswith('dset'):
+            oneline = oneline.strip().lower()
+            
+            if oneline.startswith('dset'):
                 dpath_str = oneline.split()[1]
-            elif oneline.lower().startswith('index'):
+            elif oneline.startswith('index'):
                 self._processIndex(oneline)
-            elif oneline.lower().startswith('stnmap'):
+            elif oneline.startswith('stnmap'):
                 self._processStnmap(oneline)
-            elif oneline.lower().startswith('dtype'):
+            elif oneline.startswith('dtype'):
                 self.dtype = oneline[5:].strip()
-            elif oneline.lower().startswith('pdef'):
+            elif oneline.startswith('pdef'):
                 self._processPDEF(oneline)
-            elif oneline.lower().startswith('title'):
+            elif oneline.startswith('title'):
                 self.title = oneline.split()[1].strip()
-            elif oneline.lower().startswith('undef'):
+            elif oneline.startswith('undef'):
                 self.undef = float(oneline.split()[1].strip())
-            elif oneline.lower().startswith('options'):
+            elif oneline.startswith('options'):
                 self._processOptions(oneline)
-            elif oneline.lower().startswith('byteswapped'):
+            elif oneline.startswith('byteswapped'):
                 self.byteOrder  = 'big' \
                     if sys.byteorder == 'little' else 'little'
-            elif oneline.lower().startswith('xdef'):
+            elif oneline.startswith('xdef'):
                 self._processXDef(oneline, fileContent)
-            elif oneline.lower().startswith('ydef'):
+            elif oneline.startswith('ydef'):
                 self._processYDef(oneline,fileContent)
-            elif oneline.lower().startswith('zdef'):
+            elif oneline.startswith('zdef'):
                 self._processZDef(oneline, fileContent)
-            elif oneline.lower().startswith('tdef'):
+            elif oneline.startswith('tdef'):
                 self._processTDef(oneline)
-            elif oneline.lower().startswith('edef'):
+            elif oneline.startswith('edef'):
                 self._processEDef(oneline, fileContent)
-            elif oneline.lower().startswith('vars'):
+            elif oneline.startswith('vars'):
                 self._processVars(oneline, fileContent)
-            elif oneline.lower().startswith('@ global string comment'):
+            elif oneline.startswith('@ global string comment'):
                 self._processGlobalComments(oneline)
-            elif oneline.startswith('*') or oneline.strip() == '':
+            elif oneline.startswith('*') or oneline == '':
                 continue
         
         if dpath_str == None:
@@ -546,7 +551,7 @@ class CtlDescriptor(object):
         cnt = oneline[24:].strip().split('=')
         
         self.comments[cnt[0].strip()] = cnt[1].strip()
-
+        
     def _get_template_format(self, part):
         """Get time format string
         
@@ -617,29 +622,44 @@ class CtlDescriptor(object):
         str
             The format in python datetime
         """
-        if   part == '%y2':
-            return '%y'
-        elif part == '%y4':
-            return '%Y'
-        elif part == '%m1':
-            return '%m'
-        elif part == '%m2':
-            return '%m'
-        elif part == '%mc':
-            return '%b'
-        elif part == '%d1':
-            return '%d'
-        elif part == '%d2':
-            return '%d'
-        elif part == '%h1':
-            return '%H'
-        elif part == '%h2':
-            return '%H'
-        elif part == '%n2':
-            return '%M'
-        elif part in ['%f3', '%f2', '%fn2', '%fhn', '%fdhn']:
+        template_cases = ['%x1', '%x3', '%y2', '%y4', '%m1', '%m2',
+                          '%mc', '%d1', '%d2', '%h1', '%h2', '%h3',
+                          '%n2', '%f2', '%f3', '%fn2', '%fhn', '%fdhn',
+                          '%j3', '%t1', '%t2', '%t3', '%t4', '%t5',
+                          '%t6', '%tm1', '%tm2', '%tm3', '%tm4', '%tm5', '%tm6']
+        
+        for c in template_cases:
+            if c in part:
+                length = len(c)
+                fmt = part[:length] # format in template_cases
+                rem = part[length:] # remaining str in part
+                break
+            else:
+                Exception('unsupported format: ' + part)
+        
+        if   fmt == '%y2':
+            return '%y' + rem
+        elif fmt == '%y4':
+            return '%Y' + rem
+        elif fmt == '%m1':
+            return '%m' + rem
+        elif fmt == '%m2':
+            return '%m' + rem
+        elif fmt == '%mc':
+            return '%b' + rem
+        elif fmt == '%d1':
+            return '%d' + rem
+        elif fmt == '%d2':
+            return '%d' + rem
+        elif fmt == '%h1':
+            return '%H' + rem
+        elif fmt == '%h2':
+            return '%H' + rem
+        elif fmt == '%n2':
+            return '%M' + rem
+        elif fmt in ['%f3', '%f2', '%fn2', '%fhn', '%fdhn']:
             # this is not supported by strftime()
-            return '_miniufo_' + part[1:]
+            return '_miniufo_' + part[1:] + rem
         else:
             raise Exception('unsupported format: ' + part)
     
