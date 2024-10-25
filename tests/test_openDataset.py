@@ -14,7 +14,8 @@ def test_template():
     dset1 = open_CtlDataset('./ctls/test8.ctl')
     dset2 = open_CtlDataset('./ctls/test9.ctl')
     dset3 = xr.tutorial.open_dataset('air_temperature')
-    
+    print('1')
+    print(dset1.air.dtype, dset2.air.dtype, dset3.air.dtype)
     for l in range(len(dset1.time)):
         xr.testing.assert_equal(dset1.air[l], dset2.air[l])
         xr.testing.assert_equal(dset1.air[l], dset3.air[l])
