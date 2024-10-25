@@ -1132,7 +1132,7 @@ def GrADS_increment_to_timedelta64(incre):
     timedelta64
         GrADS time in datetime64 format
     """
-    unit   = incre[-2:]
+    unit   = incre[-2:].lower()
     amount = incre[:-2]
 
     unitDict = {
