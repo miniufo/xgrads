@@ -179,42 +179,42 @@ class CtlDescriptor(object):
         dpath_str = None
         
         for oneline in fileContent:
-            oneline = oneline.strip().lower()
+            onelineL = oneline.strip().lower()
             
-            if oneline.startswith('dset'):
+            if onelineL.startswith('dset'):
                 dpath_str = oneline.split()[1]
-            elif oneline.startswith('index'):
+            elif onelineL.startswith('index'):
                 self._processIndex(oneline)
-            elif oneline.startswith('stnmap'):
+            elif onelineL.startswith('stnmap'):
                 self._processStnmap(oneline)
-            elif oneline.startswith('dtype'):
+            elif onelineL.startswith('dtype'):
                 self.dtype = oneline[5:].strip()
-            elif oneline.startswith('pdef'):
+            elif onelineL.startswith('pdef'):
                 self._processPDEF(oneline)
-            elif oneline.startswith('title'):
+            elif onelineL.startswith('title'):
                 self.title = oneline.split()[1].strip()
-            elif oneline.startswith('undef'):
+            elif onelineL.startswith('undef'):
                 self.undef = float(oneline.split()[1].strip())
-            elif oneline.startswith('options'):
+            elif onelineL.startswith('options'):
                 self._processOptions(oneline)
-            elif oneline.startswith('byteswapped'):
+            elif onelineL.startswith('byteswapped'):
                 self.byteOrder  = 'big' \
                     if sys.byteorder == 'little' else 'little'
-            elif oneline.startswith('xdef'):
+            elif onelineL.startswith('xdef'):
                 self._processXDef(oneline, fileContent)
-            elif oneline.startswith('ydef'):
+            elif onelineL.startswith('ydef'):
                 self._processYDef(oneline,fileContent)
-            elif oneline.startswith('zdef'):
+            elif onelineL.startswith('zdef'):
                 self._processZDef(oneline, fileContent)
-            elif oneline.startswith('tdef'):
+            elif onelineL.startswith('tdef'):
                 self._processTDef(oneline)
-            elif oneline.startswith('edef'):
+            elif onelineL.startswith('edef'):
                 self._processEDef(oneline, fileContent)
-            elif oneline.startswith('vars'):
+            elif onelineL.startswith('vars'):
                 self._processVars(oneline, fileContent)
-            elif oneline.startswith('@ global string comment'):
+            elif onelineL.startswith('@ global string comment'):
                 self._processGlobalComments(oneline)
-            elif oneline.startswith('*') or oneline == '':
+            elif onelineL.startswith('*') or oneline == '':
                 continue
         
         if dpath_str == None:
@@ -305,11 +305,11 @@ class CtlDescriptor(object):
             'big' if sys.byteorder == 'little' else 'little'
     
     def _processXDef(self, oneline, fileContent):
-        tokens = oneline.lower().split()
+        tokens = oneline.split()
         xnum   = int(tokens[1])
         
-        if   tokens[2] == 'linear': xlnr = True
-        elif tokens[2] == 'levels': xlnr = False
+        if   tokens[2].lower() == 'linear': xlnr = True
+        elif tokens[2].lower() == 'levels': xlnr = False
         else: raise Exception('invalid type for xdef (linear or levels): ' +
                               tokens[2])
 
@@ -337,11 +337,11 @@ class CtlDescriptor(object):
         self.periodicX = self.xdef.isPeriodic(360)
 
     def _processYDef(self, oneline, fileContent):
-        tokens = oneline.lower().split()
+        tokens = oneline.split()
         ynum   = int(tokens[1])
         
-        if   tokens[2] == 'linear': ylnr = True
-        elif tokens[2] == 'levels': ylnr = False
+        if   tokens[2].lower() == 'linear': ylnr = True
+        elif tokens[2].lower() == 'levels': ylnr = False
         else: raise Exception('invalid type for ydef (linear or levels): ' +
                               tokens[2])
         
@@ -368,11 +368,11 @@ class CtlDescriptor(object):
             self.ydef = Coordinate('ydef', np.array(values))
     
     def _processZDef(self, oneline, fileContent):
-        tokens = oneline.lower().split()
+        tokens = oneline.split()
         znum   = int(tokens[1])
         
-        if   tokens[2] == 'linear': zlnr = True
-        elif tokens[2] == 'levels': zlnr = False
+        if   tokens[2].lower() == 'linear': zlnr = True
+        elif tokens[2].lower() == 'levels': zlnr = False
         else: raise Exception('invalid type for zdef (linear or levels): ' +
                               tokens[2])
         
@@ -399,10 +399,10 @@ class CtlDescriptor(object):
             self.zdef = Coordinate('zdef', np.array(values))
 
     def _processTDef(self, oneline):
-        tokens = oneline.lower().split()
+        tokens = oneline.split()
         tnum   = int(tokens[1])
 
-        if tokens[2]!='linear':
+        if tokens[2].lower() != 'linear':
             raise Exception('nonlinear tdef is not supported')
 
         times = self._times_to_array(tokens[3], tokens[4], tnum)
@@ -419,7 +419,7 @@ class CtlDescriptor(object):
         Ensemble = namedtuple('Ensemble', ['name', 'tcount', 'tstart',
                                            'codes', 'strPos'])
         
-        tokens = oneline.lower().split()
+        tokens = oneline.split()
         enum   = int(tokens[1])
         tdef   = self.tdef
         index  = fileContent.index(oneline) + 1
