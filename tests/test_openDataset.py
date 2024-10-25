@@ -13,9 +13,8 @@ from xgrads import open_CtlDataset, open_mfdataset
 def test_template():
     dset1 = open_CtlDataset('./ctls/test8.ctl')
     dset2 = open_CtlDataset('./ctls/test9.ctl')
-    dset3 = xr.tutorial.open_dataset('air_temperature')
-    print('1')
-    print(dset1.air.dtype, dset2.air.dtype, dset3.air.dtype)
+    dset3 = xr.tutorial.open_dataset('air_temperature').astype('>f4')
+    
     for l in range(len(dset1.time)):
         xr.testing.assert_equal(dset1.air[l], dset2.air[l])
         xr.testing.assert_equal(dset1.air[l], dset3.air[l])
@@ -23,7 +22,7 @@ def test_template():
     
     dset1 = open_mfdataset('./ctls/test8_*.ctl', parallel=True)
     dset2 = open_CtlDataset('./ctls/test8.ctl').load()
-    dset3 = xr.tutorial.open_dataset('air_temperature').load()
+    dset3 = xr.tutorial.open_dataset('air_temperature').load().astype('>f4')
     
     for l in range(len(dset1.time)):
         xr.testing.assert_equal(dset1.air[l], dset3.air[l])
@@ -31,7 +30,7 @@ def test_template():
     
     dset1 = open_mfdataset('./ctls/test9_*.ctl', parallel=True)
     dset2 = open_CtlDataset('./ctls/test9.ctl').load()
-    dset3 = xr.tutorial.open_dataset('air_temperature').load()
+    dset3 = xr.tutorial.open_dataset('air_temperature').load().astype('>f4')
     
     for l in range(len(dset1.time)):
         xr.testing.assert_equal(dset1.air[l], dset2.air[l])
