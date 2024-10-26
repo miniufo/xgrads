@@ -40,7 +40,7 @@ def test_template():
         print(dset3)
         for l in range(len(dset1.time)):
             print(dset1.time[l].values, dset3.time[l].values)
-            print(dset1.air[0,0].values, dset3.air[0,0].values)
+            print(dset1.air[0,:,0].values, dset3.air[0,:,0].values)
             xr.testing.assert_allclose(dset1.air[l], dset3.air[l])        
     else:
         print('4')
