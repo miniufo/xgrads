@@ -36,7 +36,10 @@ def test_template():
     
     if use_close:
         print('3')
+        print(dset1)
+        print(dset3)
         for l in range(len(dset1.time)):
+            print(dset3.time[l])
             xr.testing.assert_allclose(dset1.air[l], dset3.air[l])        
     else:
         print('4')
