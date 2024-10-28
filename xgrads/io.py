@@ -56,7 +56,7 @@ def open_mfdataset(paths, parallel=False, encoding='GBK'):
 
     if not paths:
         raise OSError("no files to open")
-    print(paths)
+    
     if parallel:
         import dask
 
@@ -66,7 +66,10 @@ def open_mfdataset(paths, parallel=False, encoding='GBK'):
         open_ = open_CtlDataset
 
     datasets = [open_(p, encoding=encoding) for p in paths]
-
+    print(datasets[0])
+    print(datasets[1])
+    print(datasets[2])
+    print(datasets[3])
     if parallel:
         # calling compute here will return the datasets/file_objs lists,
         # the underlying datasets will still be stored as dask arrays
