@@ -32,7 +32,9 @@ def test_template():
     
     dset00 = open_CtlDataset('./ctls/test8_1.ctl').load()
     dset01 = open_CtlDataset('./ctls/test8_2.ctl').load()
-    dset11 = open_mfdataset('./ctls/test8_*.ctl', parallel=True).load()
+    dset02 = open_CtlDataset('./ctls/test8_3.ctl').load()
+    dset03 = open_CtlDataset('./ctls/test8_4.ctl').load()
+    dset11 = open_mfdataset('./ctls/test8_*.ctl', parallel=False).load()
     dset22 = open_CtlDataset('./ctls/test8.ctl').load()
     dset33 = xr.tutorial.open_dataset('air_temperature').load().astype('>f4')
     print(dset11)
@@ -42,6 +44,8 @@ def test_template():
         for l in range(len(dset1.time)):
             print(dset00.air[:,0,0].values,
                   dset01.air[:,0,0].values,
+                  dset02.air[:,0,0].values,
+                  dset03.air[:,0,0].values,
                   dset11.air[:5,0,0].values,
                   dset33.air[:5,0,0].values)
             xr.testing.assert_allclose(dset1.air[l], dset3.air[l])        
