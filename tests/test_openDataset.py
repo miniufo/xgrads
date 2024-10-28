@@ -30,23 +30,18 @@ def test_template():
             xr.testing.assert_equal(dset1.air[l], dset3.air[l])
 
     
+    dset00 = open_mfdataset('./ctls/test8_*.ctl', parallel=False).load()
     dset11 = open_mfdataset('./ctls/test8_*.ctl', parallel=True).load()
     dset22 = open_CtlDataset('./ctls/test8.ctl').load()
     dset33 = xr.tutorial.open_dataset('air_temperature').load().astype('>f4')
     
     if use_close:
         print('3')
-        print(dset1)
-        print(dset2)
-        print(dset3)
-        print(dset11)
-        print(dset22)
-        print(dset33)
         for l in range(len(dset1.time)):
             print('dset1 and 3 ', dset1.time[l].values, dset3.time[l].values)
             print('dset1 and 33 ', dset1.time[l].values, dset33.time[l].values)
             print(dset1.air[:,0,0].values, dset2.air[:5,0,0].values, dset3.air[:5,0,0].values)
-            print(dset11.air[:,0,0].values, dset22.air[:5,0,0].values, dset33.air[:5,0,0].values)
+            print(dset00.air[:,0,0].values, dset11.air[:,0,0].values, dset22.air[:5,0,0].values, dset33.air[:5,0,0].values)
             xr.testing.assert_allclose(dset1.air[l], dset3.air[l])        
     else:
         print('4')
