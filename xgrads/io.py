@@ -69,12 +69,15 @@ def open_mfdataset(paths, parallel=False, encoding='GBK'):
     print(datasets[0])
     print(datasets[1])
     print(datasets[2])
-    print(datasets[3])
     print(parallel)
     if parallel:
         # calling compute here will return the datasets/file_objs lists,
         # the underlying datasets will still be stored as dask arrays
         datasets = dask.compute(datasets)
+        print(datasets[0])
+        print(datasets[1])
+        print(datasets[2])
+        print(parallel)
 
         return xr.concat(datasets[0], dim='time')
 
