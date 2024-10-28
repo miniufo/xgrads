@@ -70,6 +70,7 @@ def open_mfdataset(paths, parallel=False, encoding='GBK'):
     print(datasets[1])
     print(datasets[2])
     print(datasets[3])
+    print(parallel)
     if parallel:
         # calling compute here will return the datasets/file_objs lists,
         # the underlying datasets will still be stored as dask arrays
