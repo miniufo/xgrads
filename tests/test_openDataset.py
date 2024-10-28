@@ -35,11 +35,15 @@ def test_template():
     dset11 = open_mfdataset('./ctls/test8_*.ctl', parallel=True).load()
     dset22 = open_CtlDataset('./ctls/test8.ctl').load()
     dset33 = xr.tutorial.open_dataset('air_temperature').load().astype('>f4')
+    print(dset11)
     
     if use_close:
         print('3')
         for l in range(len(dset1.time)):
-            print(dset00.air[:,0,0].values, dset01.air[:,0,0].values, dset11.air[:5,0,0].values, dset33.air[:5,0,0].values)
+            print(dset00.air[:,0,0].values,
+                  dset01.air[:,0,0].values,
+                  dset11.air[:5,0,0].values,
+                  dset33.air[:5,0,0].values)
             xr.testing.assert_allclose(dset1.air[l], dset3.air[l])        
     else:
         print('4')

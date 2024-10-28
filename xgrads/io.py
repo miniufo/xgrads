@@ -56,7 +56,7 @@ def open_mfdataset(paths, parallel=False, encoding='GBK'):
 
     if not paths:
         raise OSError("no files to open")
-
+    print(paths)
     if parallel:
         import dask
 
