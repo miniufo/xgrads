@@ -14,7 +14,7 @@ from xgrads import open_CtlDataset, open_mfdataset
 def test_template():
     dset1 = open_CtlDataset('./ctls/test8.ctl')
     dset2 = open_CtlDataset('./ctls/test9.ctl')
-    dset3 = xr.tutorial.open_dataset('air_temperature').astype('>f4')
+    dset3 = xr.tutorial.open_dataset('air_temperature').load().astype('>f4')
     
     use_close = True if sys.version_info[0] == 3 and sys.version_info[1]>8 else False
     
@@ -42,7 +42,7 @@ def test_template():
         for l in range(len(dset1.time)):
             print('dset1 and 3 ', dset1.time[l].values, dset3.time[l].values)
             print('dset1 and 33 ', dset1.time[l].values, dset33.time[l].values)
-            print(dset1.air[:,0,0].values, dset3.air[:10,0,0].values)
+            print(dset1.air[:,0,0].values, dset3.air[:10,0,0].values, dset33.air[:10,0,0].values)
             xr.testing.assert_allclose(dset1.air[l], dset3.air[l])        
     else:
         print('4')

@@ -405,9 +405,9 @@ class CtlDescriptor(object):
         if tokens[2].lower() != 'linear':
             raise Exception('nonlinear tdef is not supported')
 
-        times = self._times_to_array(tokens[3], tokens[4], tnum)
+        times = self._times_to_array(tokens[3].lower(), tokens[4].lower(), tnum)
         
-        self.incre = GrADS_increment_to_timedelta64(tokens[4])
+        self.incre = GrADS_increment_to_timedelta64(tokens[4].lower())
         self.tdef  = Coordinate('tdef', times)
 
     def _processEDef(self, oneline, fileContent):
@@ -431,7 +431,7 @@ class CtlDescriptor(object):
                 raise Exception(f'Expected str \'NAMEs\', but found {tokens[2]}')
             
             if NAMES:
-                enames = [i for i in tokens[3:]]
+                enames = [i.lower() for i in tokens[3:]]
                 count  = len(enames)
                 
                 while count < enum:
