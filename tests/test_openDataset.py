@@ -55,7 +55,7 @@ def test_template():
             xr.testing.assert_equal(dset1.air[l], dset3.air[l])
     
     print('5')
-    dset1 = open_mfdataset('./ctls/test9_*.ctl', parallel=True)
+    dset1 = open_mfdataset('./ctls/test9_*.ctl', parallel=False)
     dset2 = open_CtlDataset('./ctls/test9.ctl').load()
     
     for l in range(len(dset1.time)):
