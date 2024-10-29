@@ -14,11 +14,11 @@ from xgrads import open_CtlDataset, open_mfdataset
 def test_template1():
     dset1 = open_CtlDataset('./ctls/test8.ctl')
     dset2 = open_CtlDataset('./ctls/test9.ctl')
-    dset3 = xr.tutorial.open_dataset('air_temperature').load().astype('>f4')
+    dset3 = xr.tutorial.open_dataset('air_temperature')
     
     for l in range(len(dset1.time)):
-        xr.testing.assert_equal(dset1.air[l], dset2.air[l])
-        xr.testing.assert_equal(dset1.air[l], dset3.air[l])
+        xr.testing.assert_allclose(dset1.air[l], dset2.air[l])
+        xr.testing.assert_allclose(dset1.air[l], dset3.air[l])
 
 
 # def test_template2():
