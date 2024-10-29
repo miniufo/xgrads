@@ -5,3 +5,4 @@ nbsphinx
 numpydoc
 Cython
 pyproj
+myst_parser
