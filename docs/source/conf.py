@@ -40,7 +40,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',     # math
-    'myst-parser',            # Markdown
+    'myst_parser',            # Markdown
     # 'recommonmark',           # Markdown
 ]
 
