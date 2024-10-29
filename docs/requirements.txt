@@ -6,3 +6,4 @@ numpydoc
 Cython
 pyproj
 myst_parser
+sphinx_rtd_theme
