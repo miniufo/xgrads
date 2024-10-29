@@ -77,7 +77,7 @@ def open_mfdataset(paths, parallel=False, encoding='GBK'):
 
         return xr.concat(datasets[0], dim='time')
 
-    combined = xr.concat(datasets, dim='time')
+    combined = xr.merge(datasets)
     print('combined: ', combined.air[0:4,0,0].values)
     return combined
 
