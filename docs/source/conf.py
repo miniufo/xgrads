@@ -40,8 +40,8 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',     # math
-    # 'myst_parser',            # Markdown
-    'recommonmark',           # Markdown
+    'myst_parser',            # Markdown
+    # 'recommonmark',           # Markdown
 ]
 
 # The master toctree document.
