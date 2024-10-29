@@ -66,7 +66,10 @@ def open_mfdataset(paths, parallel=False, encoding='GBK'):
         open_ = open_CtlDataset
 
     datasets = [open_(p, encoding=encoding) for p in paths]
-    print(paths)
+    print(paths[0], datasets[0].air[0,0,0].values)
+    print(paths[1], datasets[1].air[0,0,0].values)
+    print(paths[2], datasets[2].air[0,0,0].values)
+    print(paths[3], datasets[3].air[0,0,0].values)
     if parallel:
         # calling compute here will return the datasets/file_objs lists,
         # the underlying datasets will still be stored as dask arrays
@@ -75,7 +78,7 @@ def open_mfdataset(paths, parallel=False, encoding='GBK'):
         return xr.concat(datasets[0], dim='time')
 
     combined = xr.concat(datasets, dim='time')
-
+    print('combined: ', combined.air[0:4,0,0].values)
     return combined
 
 
