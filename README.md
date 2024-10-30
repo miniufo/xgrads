@@ -1,5 +1,6 @@
 # xgrads
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/5b8ba6b1754447898c25e571c3c0b7fd)](https://app.codacy.com/gh/miniufo/xgrads?utm_source=github.com&utm_medium=referral&utm_content=miniufo/xgrads&utm_campaign=Badge_Grade)
 [![DOI](https://zenodo.org/badge/244529165.svg)](https://zenodo.org/badge/latestdoi/244529165)
 ![GitHub](https://img.shields.io/github/license/miniufo/xgrads)
 [![Documentation Status](https://readthedocs.org/projects/xgrads/badge/?version=latest)](https://xgrads.readthedocs.io/en/latest/?badge=latest)
