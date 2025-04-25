@@ -11,6 +11,14 @@ from datetime import datetime
 from numpy import datetime64, timedelta64
 
 
+template_patterns = [
+    r'%x1', r'%x3', r'%y2', r'%y4', r'%m1', r'%m2',
+    r'%mc', r'%d1', r'%d2', r'%h1', r'%h2', r'%h3',
+    r'%n2', r'%f2', r'%f3', r'%fn2', r'%fhn', r'%fdhn',
+    r'%j3', r'%t1', r'%t2', r'%t3', r'%t4', r'%t5',
+    r'%t6', r'%tm1', r'%tm2', r'%tm3', r'%tm4', r'%tm5', r'%tm6'
+]
+
 """
 Core classes are defined below
 """
@@ -243,26 +251,20 @@ class CtlDescriptor(object):
         if strPos == -1:
             raise Exception('template is used in ctl but no % in dset')
         
-        endPos = len(dpath_str) - dpath_str[::-1].find('.') - 1
-        # endPos = len(dpath_str) if endPos == -1 else endPos
+        matches = find_patterns(dpath_str)
+        fmtO = ''.join(matches)
         
-        template = dpath_str[strPos:endPos]
-        
-        tokens = [self._get_template_format('%'+token)
-                  for token in filter(lambda x: x != '', template.split('%'))]
-        # tokens = []
-        # for token in filter(lambda x: x != '', template.split('%')):
-        #     tokens.append(self._get_template_format('%' + token))
-        fmt = ''.join(tokens)
+        tokens = [self._get_template_format(token) for token in matches]
+        fmtN = ''.join(tokens)
         
         fileList = []
         
         times = self.tdef.samples
         base  = self._get_field(times[0])
         for l in range(len(times)):
-            part = times[l].item().strftime(fmt)
+            part = times[l].astype('datetime64[s]').item().strftime(fmtN)
             
-            fname = dpath_str[:strPos] + part + dpath_str[endPos:]
+            fname = dpath_str.replace(fmtO, part)
             fname = self._replace_forecast_template(fname, l, base)
             
             # remove duplicated file
@@ -622,16 +624,10 @@ class CtlDescriptor(object):
         str
             The format in python datetime
         """
-        template_cases = ['%x1', '%x3', '%y2', '%y4', '%m1', '%m2',
-                          '%mc', '%d1', '%d2', '%h1', '%h2', '%h3',
-                          '%n2', '%f2', '%f3', '%fn2', '%fhn', '%fdhn',
-                          '%j3', '%t1', '%t2', '%t3', '%t4', '%t5',
-                          '%t6', '%tm1', '%tm2', '%tm3', '%tm4', '%tm5', '%tm6']
-        
-        for c in template_cases:
+        for c in template_patterns:
             if c in part:
                 length = len(c)
-                fmt = part[:length] # format in template_cases
+                fmt = part[:length] # format in template_patterns
                 rem = part[length:] # remaining str in part
                 break
             else:
@@ -779,7 +775,7 @@ class CtlDescriptor(object):
                 y, m = y+int((m+l-1)/12), int((m+l-1)%12)+1
                 lst.append(start.replace(year=y, month=m))
             
-            return np.asarray(lst, dtype='datetime64[s]')
+            return np.asarray(lst, dtype='datetime64[s]').astype('datetime64[ns]')
             
         elif 'yr' in incre:
             start = GrADStime_to_datetime(strTime)
@@ -789,7 +785,7 @@ class CtlDescriptor(object):
                 y = start.year + l
                 lst.append(start.replace(year=y))
             
-            return np.asarray(lst, dtype='datetime64[s]')
+            return np.asarray(lst, dtype='datetime64[s]').astype('datetime64[ns]')
         
         else:
             start = GrADStime_to_datetime64(strTime)
@@ -804,11 +800,11 @@ class CtlDescriptor(object):
                         lst.append(start)
                     start += intv
 
-                return np.asarray(lst)
+                return np.asarray(lst).astype('datetime64[ns]')
 
             else:
 
-                return np.arange(start, start + intv * tnum, intv)
+                return np.arange(start, start + intv * tnum, intv).astype('datetime64[ns]')
 
     def __repr__(self):
         """Print this class as a string"""
@@ -1146,5 +1142,20 @@ def GrADS_increment_to_timedelta64(incre):
     return timedelta64(int(amount), unitDict[unit])
 
 
-
+def find_patterns(template_path):
+    """Find template patterns in a given path
+    
+    Parameters
+    ----------
+    template_path: str
+        A path containing template strings.
+    
+    Returns
+    -------
+    re: list
+        matched strings
+    """
+    pattern = re.compile('|'.join(template_patterns))
+    
+    return pattern.findall(template_path)
 

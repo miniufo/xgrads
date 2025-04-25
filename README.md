@@ -7,6 +7,7 @@
 [![Publish to PyPI](https://github.com/miniufo/xgrads/actions/workflows/PyPI-publish.yml/badge.svg)](https://github.com/miniufo/xgrads/actions/workflows/PyPI-publish.yml)
 [![pytest](https://github.com/miniufo/xgrads/actions/workflows/tests.yml/badge.svg)](https://github.com/miniufo/xgrads/actions/workflows/tests.yml)
 [![Build Status](https://app.travis-ci.com/miniufo/xgrads.svg?branch=master)](https://app.travis-ci.com/miniufo/xgrads)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/f86676a904ef4ebfa4c2f9cda46264f5)](https://app.codacy.com/gh/miniufo/xgrads/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 ![3D plot](https://raw.githubusercontent.com/miniufo/xgrads/master/pics/3D.png)
 
@@ -24,6 +25,11 @@ This python package [`xgrads`](https://github.com/miniufo/xgrads) is designed fo
 **Install via pip**
 ```
 pip install xgrads
+```
+
+**Install via conda**
+```
+conda install -c conda-forge xgrads
 ```
 
 **Install from github**

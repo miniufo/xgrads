@@ -7,7 +7,6 @@ Copyright 2018. All rights reserved. Use is subject to license terms.
 """
 import numpy as np
 import xarray as xr
-import sys
 from xgrads import open_CtlDataset, open_mfdataset
 
 
