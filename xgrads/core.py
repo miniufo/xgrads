@@ -10,14 +10,101 @@ import numpy as np
 from datetime import datetime
 from numpy import datetime64, timedelta64
 
+"""
+See the following URL for reference:
+http://cola.gmu.edu/grads/gadoc/templates.html
 
-template_patterns = [
-    r'%x1', r'%x3', r'%y2', r'%y4', r'%m1', r'%m2',
-    r'%mc', r'%d1', r'%d2', r'%h1', r'%h2', r'%h3',
-    r'%n2', r'%f2', r'%f3', r'%fn2', r'%fhn', r'%fdhn',
-    r'%j3', r'%t1', r'%t2', r'%t3', r'%t4', r'%t5',
-    r'%t6', r'%tm1', r'%tm2', r'%tm3', r'%tm4', r'%tm5', r'%tm6'
-]
+%x1   1 digit decade
+%x3   3 digit decade
+%y2   2 digit year
+%y4   4 digit year
+%m1   1 or 2 digit month
+%m2   2 digit month (leading zero if needed)
+%mc   3 character month abbreviation
+%d1   1 or 2 digit day
+%d2   2 digit day (leading zero if needed)
+%h1   1 or 2 digit hour
+%h2   2 digit hour
+%h3   3 digit hour (e.g., 120 or 012)
+%n2   2 digit minute; leading zero if needed
+%f2   2 digit forecast hour; leading zero if needed; more digits added
+      for hours >99; hour values increase indefinitely
+%f3   3 digit forecast hour; leading zeros if needed; more digits added
+      for hours >999; hour values increase indefinitely
+%fn2  2 digit forecast minute; leading zero if needed; more digits added
+      for minutes > 99; minute values increase indefinitely (2.0.a9+)
+%fhn  forecast time expressed in hours and minutes (hhnn) where minute
+      value (nn) is always <=59 and hour value (hh) increases indefinitely.
+      If hh or nn are <=9, they are padded with a 0, so they are always at
+      least 2 digits; more digits added for hours >99. (2.0.a9+)
+%fdhn forecast time expressed in days, hours, and minutes (ddhhnn) where
+      minute value (nn) is always <=59, hour value (hh) is always <=23 and
+      day value (dd) increases indefinitely. If dd, hh, or nn are <=9, they
+      are padded with a 0 so they are always at least 2 digits; more digits
+      added for days >99. (2.0.a9+)
+%j3   3 digit julian day (day of year) (2.0.a7+)
+%t1   1 or 2 digit time index (file names contain number sequences that
+      begin with 1 or 01) (2.0.a7+)
+%t2   2 digit time index (file names contain number sequences that begin
+      with 01) (2.0.a7+)
+%t3   3 digit time index (file names contain number sequences that begin
+      with 001) (2.0.a7+)
+%t4   4 digit time index (file names contain number sequences that begin
+      with 0001) (2.0.a8+)
+%t5   5 digit time index (file names contain number sequences that begin
+      with 00001) (2.0.a8+)
+%t6   6 digit time index (file names contain number sequences that begin
+      with 000001) (2.0.a8+)
+%tm1  1 or 2 digit time index (file names contain number sequences that
+      begin with 0 or 00) (2.0.a7+)
+%tm2  2 digit time index (file names contain number sequences that begin
+      with 00) (2.0.a7+)
+%tm3  3 digit time index (file names contain number sequences that begin
+      with 000) (2.0.a7+)
+%tm4  4 digit time index (file names contain number sequences that begin
+      with 0000) (2.0.a8+)
+%tm5  5 digit time index (file names contain number sequences that begin
+      with 00000) (2.0.a8+)
+%tm6  6 digit time index (file names contain number sequences that begin
+      with 000000) (2.0.a8+)
+"""
+template_mappings = { # None means not supported
+    r'%y2'  : '%y',
+    r'%y4'  : '%Y',
+    r'%m1'  : '%m',
+    r'%m2'  : '%m',
+    r'%mc'  : '%b',
+    r'%d1'  : '%d',
+    r'%d2'  : '%d',
+    r'%h1'  : '%H',
+    r'%h2'  : '%H',
+    r'%n2'  : '%M',
+    r'%f2'  : '_miniufo_f2',
+    r'%f3'  : '_miniufo_f3',
+    r'%fn2' : '_miniufo_fn2',
+    r'%fhn' : '_miniufo_fhn',
+    r'%fdhn': '_miniufo_fdhn',
+}
+
+unsupported_mappings = {
+    r'%x1'  : None,
+    r'%x3'  : None,
+    r'%h3'  : None,
+    r'%j3'  : None,
+    r'%t1'  : None,
+    r'%t2'  : None,
+    r'%t3'  : None,
+    r'%t4'  : None,
+    r'%t5'  : None,
+    r'%t6'  : None,
+    r'%tm1' : None,
+    r'%tm2' : None,
+    r'%tm3' : None,
+    r'%tm4' : None,
+    r'%tm5' : None,
+    r'%tm6' : None,
+}
+
 
 """
 Core classes are defined below
@@ -251,21 +338,23 @@ class CtlDescriptor(object):
         if strPos == -1:
             raise Exception('template is used in ctl but no % in dset')
         
-        matches = find_patterns(dpath_str)
-        fmtO = ''.join(matches)
-        
-        tokens = [self._get_template_format(token) for token in matches]
-        fmtN = ''.join(tokens)
-        
         fileList = []
         
         times = self.tdef.samples
         base  = self._get_field(times[0])
+        for supported_fmt, replacement in template_mappings.items():
+            if supported_fmt in dpath_str:
+                dpath_str = dpath_str.replace(supported_fmt, replacement)
+        
+        for unsupported_fmt, replacement in unsupported_mappings.items():
+            if unsupported_fmt in dpath_str:
+                raise Exception('unsupported format: ' + unsupported_fmt)
+        
         for l in range(len(times)):
-            part = times[l].astype('datetime64[s]').item().strftime(fmtN)
+            part = times[l].astype('datetime64[s]').item().strftime(dpath_str)
             
-            fname = dpath_str.replace(fmtO, part)
-            fname = self._replace_forecast_template(fname, l, base)
+            #fname = dpath_str.replace(fmtO, part)
+            fname = self._replace_forecast_template(part, l, base)
             
             # remove duplicated file
             if fname not in fileList:
@@ -280,7 +369,7 @@ class CtlDescriptor(object):
                 break
 
         self.hasData = has
-        
+    
     def _processDSet(self, dpath_str):
         self.dsetPath = dpath_str
         self.hasData  = os.path.exists(self.dsetPath)
@@ -553,111 +642,6 @@ class CtlDescriptor(object):
         cnt = oneline[24:].strip().split('=')
         
         self.comments[cnt[0].strip()] = cnt[1].strip()
-        
-    def _get_template_format(self, part):
-        """Get time format string
-        
-        See the following URL for reference:
-        http://cola.gmu.edu/grads/gadoc/templates.html
-        
-        %x1   1 digit decade
-        %x3   3 digit decade
-        %y2   2 digit year
-        %y4   4 digit year
-        %m1   1 or 2 digit month
-        %m2   2 digit month (leading zero if needed)
-        %mc   3 character month abbreviation
-        %d1   1 or 2 digit day
-        %d2   2 digit day (leading zero if needed)
-        %h1   1 or 2 digit hour
-        %h2   2 digit hour
-        %h3   3 digit hour (e.g., 120 or 012)
-        %n2   2 digit minute; leading zero if needed
-        %f2   2 digit forecast hour; leading zero if needed; more digits added
-              for hours >99; hour values increase indefinitely
-        %f3   3 digit forecast hour; leading zeros if needed; more digits added
-              for hours >999; hour values increase indefinitely
-        %fn2  2 digit forecast minute; leading zero if needed; more digits added
-              for minutes > 99; minute values increase indefinitely (2.0.a9+)
-        %fhn  forecast time expressed in hours and minutes (hhnn) where minute
-              value (nn) is always <=59 and hour value (hh) increases indefinitely.
-              If hh or nn are <=9, they are padded with a 0, so they are always at
-              least 2 digits; more digits added for hours >99. (2.0.a9+)
-        %fdhn forecast time expressed in days, hours, and minutes (ddhhnn) where
-              minute value (nn) is always <=59, hour value (hh) is always <=23 and
-              day value (dd) increases indefinitely. If dd, hh, or nn are <=9, they
-              are padded with a 0 so they are always at least 2 digits; more digits
-              added for days >99. (2.0.a9+)
-        %j3   3 digit julian day (day of year) (2.0.a7+)
-        %t1   1 or 2 digit time index (file names contain number sequences that
-              begin with 1 or 01) (2.0.a7+)
-        %t2   2 digit time index (file names contain number sequences that begin
-              with 01) (2.0.a7+)
-        %t3   3 digit time index (file names contain number sequences that begin
-              with 001) (2.0.a7+)
-        %t4   4 digit time index (file names contain number sequences that begin
-              with 0001) (2.0.a8+)
-        %t5   5 digit time index (file names contain number sequences that begin
-              with 00001) (2.0.a8+)
-        %t6   6 digit time index (file names contain number sequences that begin
-              with 000001) (2.0.a8+)
-        %tm1  1 or 2 digit time index (file names contain number sequences that
-              begin with 0 or 00) (2.0.a7+)
-        %tm2  2 digit time index (file names contain number sequences that begin
-              with 00) (2.0.a7+)
-        %tm3  3 digit time index (file names contain number sequences that begin
-              with 000) (2.0.a7+)
-        %tm4  4 digit time index (file names contain number sequences that begin
-              with 0000) (2.0.a8+)
-        %tm5  5 digit time index (file names contain number sequences that begin
-              with 00000) (2.0.a8+)
-        %tm6  6 digit time index (file names contain number sequences that begin
-              with 000000) (2.0.a8+)
-    
-        Parameters
-        ----------
-        part : str
-            A string in the above format started with %.
-    
-        Returns
-        -------
-        str
-            The format in python datetime
-        """
-        for c in template_patterns:
-            if c in part:
-                length = len(c)
-                fmt = part[:length] # format in template_patterns
-                rem = part[length:] # remaining str in part
-                break
-            else:
-                Exception('unsupported format: ' + part)
-        
-        if   fmt == '%y2':
-            return '%y' + rem
-        elif fmt == '%y4':
-            return '%Y' + rem
-        elif fmt == '%m1':
-            return '%m' + rem
-        elif fmt == '%m2':
-            return '%m' + rem
-        elif fmt == '%mc':
-            return '%b' + rem
-        elif fmt == '%d1':
-            return '%d' + rem
-        elif fmt == '%d2':
-            return '%d' + rem
-        elif fmt == '%h1':
-            return '%H' + rem
-        elif fmt == '%h2':
-            return '%H' + rem
-        elif fmt == '%n2':
-            return '%M' + rem
-        elif fmt in ['%f3', '%f2', '%fn2', '%fhn', '%fdhn']:
-            # this is not supported by strftime()
-            return '_miniufo_' + part[1:] + rem
-        else:
-            raise Exception('unsupported format: ' + part)
     
     def _replace_forecast_template(self, fname, l, base):
         """Replace forecast str %f as a template in dset
@@ -1140,22 +1124,4 @@ def GrADS_increment_to_timedelta64(incre):
         'yr': 'Y'}
 
     return timedelta64(int(amount), unitDict[unit])
-
-
-def find_patterns(template_path):
-    """Find template patterns in a given path
-    
-    Parameters
-    ----------
-    template_path: str
-        A path containing template strings.
-    
-    Returns
-    -------
-    re: list
-        matched strings
-    """
-    pattern = re.compile('|'.join(template_patterns))
-    
-    return pattern.findall(template_path)
 

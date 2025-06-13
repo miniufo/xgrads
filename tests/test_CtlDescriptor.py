@@ -111,8 +111,12 @@ def test_all_sample_ctls():
         ['./ctls/test9_20130101.dat', './ctls/test9_20130102.dat',
          './ctls/test9_20130103.dat'],
         './ctls/test10.dat',
+        ['./ctls/R13537439_202112061850.raw.gz',
+         './ctls/R13537439_202112061900.raw.gz',
+         './ctls/R13537439_202112061910.raw.gz'],
+         './ctls/test10.dat',
     ]
-    for i in range(10):
+    for i in range(12):
         ctl = CtlDescriptor(file='./ctls/test'+str(i+1)+'.ctl')
         re = ctl.dsetPath == paths[i]
         
