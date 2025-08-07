@@ -232,7 +232,10 @@ class CtlDescriptor(object):
         
         if kwargs.get('file'):
             abspath = kwargs['file']
-            abspath = os.path.abspath(abspath)
+            
+            if not '/' in abspath and not '\\' in abspath:
+                # thanks to Baofeng Jiao from IAP and Huizhong Chen from SCSIO
+                abspath = './' + abspath
             
             if os.path.getsize(abspath) / (1024.0*1024.0) > 2:
                 raise Exception('ctl file is too large (> 2 MB)')
