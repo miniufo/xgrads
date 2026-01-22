@@ -4,6 +4,7 @@ from os import path
 import io
 import re
 
+
 with io.open("xgrads/__init__.py", "rt", encoding="utf8") as f:
     version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
 
