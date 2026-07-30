@@ -5,10 +5,15 @@ Created on 2020.03.02
 @author: MiniUFO
 Copyright 2018. All rights reserved. Use is subject to license terms.
 """
-import os, sys, re
-import numpy as np
+from __future__ import annotations
+import os
+import sys
+import re
+from collections import namedtuple
 from datetime import datetime
-from numpy import datetime64, timedelta64
+from typing import Optional, Any, Union, Callable
+import numpy as np
+from numpy.typing import NDArray
 
 """
 See the following URL for reference:
@@ -68,7 +73,7 @@ http://cola.gmu.edu/grads/gadoc/templates.html
 %tm6  6 digit time index (file names contain number sequences that begin
       with 000000) (2.0.a8+)
 """
-template_mappings = { # None means not supported
+template_mappings: dict[str, str] = { # None means not supported
     r'%y2'  : '%y',
     r'%y4'  : '%Y',
     r'%m1'  : '%m',
@@ -86,7 +91,7 @@ template_mappings = { # None means not supported
     r'%fdhn': '_miniufo_fdhn',
 }
 
-unsupported_mappings = {
+unsupported_mappings: dict[str, None] = {
     r'%x1'  : None,
     r'%x3'  : None,
     r'%h3'  : None,
@@ -177,7 +182,7 @@ class CtlDescriptor(object):
     tRecLength: int
         record length of a single time (including all variables)
     """
-    def __init__(self, encoding='GBK', **kwargs):
+    def __init__(self, encoding: str = 'GBK', **kwargs: Any) -> None:
         """Constructor
 
         One of the keyword argument `file` or `content` should be specified.
@@ -196,44 +201,45 @@ class CtlDescriptor(object):
         CtlDescriptor
             An object represents the ctl file
         """
-        self.vcount = 0
+        self.vcount: int = 0
         
-        self.pdef = None
-        self.tdef = None
-        self.zdef = None
-        self.ydef = None
-        self.xdef = None
-        self.vdef = None
-        self.edef = None
-        self.comments = {}
+        self.pdef: Optional[PDEF] = None
+        self.tdef: Optional[Coordinate] = None
+        self.zdef: Optional[Coordinate] = None
+        self.ydef: Optional[Coordinate] = None
+        self.xdef: Optional[Coordinate] = None
+        self.vdef: Optional[list[CtlVar]] = None
+        self.edef: Optional[list[Any]] = None
+        self.comments: dict[str, str] = {}
         
-        self.dsetPath = ''
-        self.descPath = ''
-        self.indxPath = ''
-        self.stnmPath = ''
-        self.storage  = ''
-        self.dtype    = ''
-        self.title    = ''
-        self.incre    = ''
+        self.dsetPath: Union[str, NDArray[np.str_]] = ''
+        self.descPath: Optional[str] = ''
+        self.indxPath: str = ''
+        self.stnmPath: str = ''
+        self.storage: str = ''
+        self.dtype: str = ''
+        self.title: str = ''
+        self.incre: str = ''
+        self.undef: float = 1e36
         
-        self.zrev     = False
-        self.yrev     = False
-        self.hasData  = False
+        self.zrev: bool = False
+        self.yrev: bool = False
+        self.hasData: bool = False
         
-        self.periodicX   = False
-        self.cal365Days  = False
-        self.template    = False
-        self.sequential  = False
+        self.periodicX: bool = False
+        self.cal365Days: bool = False
+        self.template: bool = False
+        self.sequential: bool = False
         
-        self.totalZCount = 0
-        self.zRecLength  = 0
-        self.tRecLength  = 0
-        self.byteOrder   = sys.byteorder
+        self.totalZCount: int = 0
+        self.zRecLength: int = 0
+        self.tRecLength: int = 0
+        self.byteOrder: str = sys.byteorder
         
         if kwargs.get('file'):
-            abspath = kwargs['file']
+            abspath: str = kwargs['file']
             
-            if not '/' in abspath and not '\\' in abspath:
+            if '/' not in abspath and '\\' not in abspath:
                 # thanks to Baofeng Jiao from IAP and Huizhong Chen from SCSIO
                 abspath = './' + abspath
             
@@ -241,7 +247,7 @@ class CtlDescriptor(object):
                 raise Exception('ctl file is too large (> 2 MB)')
             
             with open(abspath, 'r', encoding=encoding) as f:
-                fileContent = f.readlines()
+                fileContent: list[str] = f.readlines()
         
         elif kwargs.get('content'):
             abspath = None
@@ -270,9 +276,9 @@ class CtlDescriptor(object):
         self.descPath=abspath
         self.parse(fileContent)
     
-    def parse(self, fileContent):
+    def parse(self, fileContent: list[str]) -> None:
         """Parse file content as a multi-line str"""
-        dpath_str = None
+        dpath_str: Optional[str] = None
         
         for oneline in fileContent:
             onelineL = oneline.strip().lower()
@@ -313,7 +319,7 @@ class CtlDescriptor(object):
             elif onelineL.startswith('*') or oneline == '':
                 continue
         
-        if dpath_str == None:
+        if dpath_str is None:
             raise Exception('no valid dset is parsed')
         
         if self.template:
@@ -325,7 +331,7 @@ class CtlDescriptor(object):
             self.ydef.samples = np.flip(self.ydef.samples)
         
         if self.zrev:
-            self.zdef = np.flip(self.zdef)
+            self.zdef.samples = np.flip(self.zdef.samples)
         
         if self.edef:
             strPos = 0
@@ -333,13 +339,13 @@ class CtlDescriptor(object):
                 self.edef[i] = self.edef[i]._replace(strPos=strPos)
                 strPos += e.tcount * self.tRecLength
     
-    def _processDSets(self, dpath_str):
+    def _processDSets(self, dpath_str: str) -> None:
         strPos = dpath_str.find('%')
         
         if strPos == -1:
             raise Exception('template is used in ctl but no % in dset')
         
-        fileList = []
+        fileList: list[str] = []
         
         times = self.tdef.samples
         base  = self._get_field(times[0])
@@ -371,20 +377,20 @@ class CtlDescriptor(object):
 
         self.hasData = has
     
-    def _processDSet(self, dpath_str):
+    def _processDSet(self, dpath_str: str) -> None:
         self.dsetPath = dpath_str
         self.hasData  = os.path.exists(self.dsetPath)
     
-    def _processIndex(self, oneline):
+    def _processIndex(self, oneline: str) -> None:
         self.indxPath = oneline.split()[1]
     
-    def _processStnmap(self, oneline):
+    def _processStnmap(self, oneline: str) -> None:
         self.stnmPath = oneline.split()[1]
     
-    def _processPDEF(self, oneline):
+    def _processPDEF(self, oneline: str) -> None:
         self.pdef = PDEF(oneline)
     
-    def _processOptions(self, oneline):
+    def _processOptions(self, oneline: str) -> None:
         lineLower = oneline.lower()
         
         if 'yrev'             in lineLower: self.yrev       = True
@@ -396,7 +402,7 @@ class CtlDescriptor(object):
         if 'byteswapped'      in lineLower: self.byteOrder  = \
             'big' if sys.byteorder == 'little' else 'little'
     
-    def _processXDef(self, oneline, fileContent):
+    def _processXDef(self, oneline: str, fileContent: list[str]) -> None:
         tokens = oneline.split()
         xnum   = int(tokens[1])
         
@@ -428,7 +434,7 @@ class CtlDescriptor(object):
 
         self.periodicX = self.xdef.isPeriodic(360)
 
-    def _processYDef(self, oneline, fileContent):
+    def _processYDef(self, oneline: str, fileContent: list[str]) -> None:
         tokens = oneline.split()
         ynum   = int(tokens[1])
         
@@ -459,7 +465,7 @@ class CtlDescriptor(object):
             
             self.ydef = Coordinate('ydef', np.array(values))
     
-    def _processZDef(self, oneline, fileContent):
+    def _processZDef(self, oneline: str, fileContent: list[str]) -> None:
         tokens = oneline.split()
         znum   = int(tokens[1])
         
@@ -490,7 +496,7 @@ class CtlDescriptor(object):
             
             self.zdef = Coordinate('zdef', np.array(values))
 
-    def _processTDef(self, oneline):
+    def _processTDef(self, oneline: str) -> None:
         tokens = oneline.split()
         tnum   = int(tokens[1])
 
@@ -502,11 +508,9 @@ class CtlDescriptor(object):
         self.incre = GrADS_increment_to_timedelta64(tokens[4].lower())
         self.tdef  = Coordinate('tdef', times)
 
-    def _processEDef(self, oneline, fileContent):
+    def _processEDef(self, oneline: str, fileContent: list[str]) -> None:
         if not self.tdef:
             raise Exception('edef should be after tdef')
-        
-        from collections import namedtuple
         
         Ensemble = namedtuple('Ensemble', ['name', 'tcount', 'tstart',
                                            'codes', 'strPos'])
@@ -534,7 +538,7 @@ class CtlDescriptor(object):
                 
                 if count != enum:
                     raise Exception((f'edef not parsed correctly, count={count} '+
-                                     'while enum={enum}'))
+                                     f'while enum={enum}'))
                 
                 self.edef = [Ensemble(name, tdef.length(), tdef.samples[0], None, 0)
                              for name in enames]
@@ -564,7 +568,7 @@ class CtlDescriptor(object):
             
             self.edef = tmp
     
-    def _processVars(self, oneline, fileContent):
+    def _processVars(self, oneline: str, fileContent: list[str]) -> None:
         if (self.dtype != 'station' and 
             not all([self.tdef, self.zdef, self.ydef, self.xdef])):
             raise Exception('vdef should be after x, y, z and t definitions')
@@ -595,6 +599,7 @@ class CtlDescriptor(object):
         v.index =0
         v.strPos=0
         v.tcount=t
+        v.undef = self.undef
         
         if self.dtype != 'station':
             v.ycount=y
@@ -639,12 +644,12 @@ class CtlDescriptor(object):
         if fileContent[start + vnum].strip().lower() != 'endvars':
             raise Exception('endvars is expected')
     
-    def _processGlobalComments(self, oneline):
+    def _processGlobalComments(self, oneline: str) -> None:
         cnt = oneline[24:].strip().split('=')
         
         self.comments[cnt[0].strip()] = cnt[1].strip()
     
-    def _replace_forecast_template(self, fname, l, base):
+    def _replace_forecast_template(self, fname: str, l: int, base: NDArray[np.int64]) -> str:
         """Replace forecast str %f as a template in dset
     
         Parameters
@@ -696,7 +701,7 @@ class CtlDescriptor(object):
         
         return fname
 
-    def _get_field(self, datetime64):
+    def _get_field(self, datetime64: np.datetime64) -> NDArray[np.uint32]:
         """Get fields of a datetime64
         
         Convert array of datetime64 to a calendar array of
@@ -731,7 +736,7 @@ class CtlDescriptor(object):
         return out
 
 
-    def _times_to_array(self, strTime, incre, tnum):
+    def _times_to_array(self, strTime: str, incre: str, tnum: int) -> NDArray[np.datetime64]:
         """Change format of time
         
         Convert GrADS time string of strart time and increment
@@ -744,7 +749,7 @@ class CtlDescriptor(object):
         incre : str
             Grads time increment in str format e.g., 1dy.
         tnum : int
-            Grads time increment in str format e.g., 1dy.
+            Number of time steps.
         
         Returns
         -------
@@ -791,7 +796,7 @@ class CtlDescriptor(object):
 
                 return np.arange(start, start + intv * tnum, intv).astype('datetime64[ns]')
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Print this class as a string"""
         vdef = np.array(self.vdef)
         pdef = self.pdef.proj if self.pdef is not None else ''
@@ -845,7 +850,7 @@ class PDEF(object):
     lonref: str
         reference longitude
     """
-    def __init__(self, oneline):
+    def __init__(self, oneline: str) -> None:
         """Constructor
         
         Parameters
@@ -893,10 +898,10 @@ class PDEF(object):
         else:
             raise Exception('not currently supported PDEF\n' + oneline)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Print this class as a string"""
         return '\n'.join(['%s: %s' % item for item in self.__dict__.items()])
-    
+
 
 
 class Coordinate(object):
@@ -917,7 +922,7 @@ class Coordinate(object):
     delSamples: str
         Finite difference between samples
     """
-    def __init__(self, name, samples):
+    def __init__(self, name: str, samples: NDArray[np.float32]) -> None:
         """Constructor
         
         Parameters
@@ -927,14 +932,13 @@ class Coordinate(object):
         samples : np.array
             1D array for the discrete coordinate.
         """
-        self.isLinear   = True
-        self.isIncre    = True
-        self.name       = name
-        self.samples    = samples
-        self.delSamples = None
-        
-        self.max = np.max(self.samples)
-        self.min = np.min(self.samples)
+        self.isLinear: bool = True
+        self.isIncre: bool = True
+        self.name: str = name
+        self.samples: NDArray[np.float32] = samples
+        self.delSamples: Optional[NDArray[np.float32]] = None
+        self.max: float = np.max(self.samples)
+        self.min: float = np.min(self.samples)
         
         if len(samples) > 1:
             self.delSamples = np.diff(self.samples)
@@ -944,22 +948,22 @@ class Coordinate(object):
         else:
             self.delSamples = np.array([1])
     
-    def length(self):
+    def length(self) -> int:
         return len(self.samples)
     
-    def isPeriodic(self,period):
+    def isPeriodic(self, period: float) -> bool:
         # not physically but generally true
         if not self.isLinear: return False
         
         delta = self.delSamples[0]
         start = self.samples[-1] + delta - period
         
-        if(abs((start - self.samples[0]) / delta > 1e-4)):
+        if(abs((start - self.samples[0]) / delta) > 1e-4):
             return False
         
         return True
     
-    def __str__(self):
+    def __str__(self) -> str:
         """Print this class as a string"""
         return str(self.samples)
 
@@ -997,13 +1001,14 @@ class CtlVar(object):
     __reUnits = re.compile(r'\([^\(\)]+?\)')
     
     
-    def __init__(self, oneLineStr):
-        self.tcount = 0
-        self.zcount = 0
-        self.ycount = 0
-        self.xcount = 0
-        self.undef  = np.nan
-        self.dependZ= True # whether the var depends on z
+    def __init__(self, oneLineStr: str) -> None:
+        self.tcount: int = 0
+        self.zcount: int = 0
+        self.ycount: int = 0
+        self.xcount: int = 0
+        self.undef: float = np.nan
+        self.dependZ: bool = True # whether the var depends on z
+        self.storage: str = ''
         
         self.unit   = ''
         self.name   = ''
@@ -1034,13 +1039,13 @@ class CtlVar(object):
             self.zcount = 1
             self.dependZ= False
     
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Print this class as a string.
         """
         return '\n'.join(('%8s: %s' % item for item in self.__dict__.items()))
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Print this class as a string.
         """
@@ -1053,7 +1058,7 @@ class CtlVar(object):
 """
 Some useful functions defined here
 """
-def GrADStime_to_datetime(gradsTime):
+def GrADStime_to_datetime(gradsTime: str) -> datetime:
     """Convert GrADS time string e.g., 00:00z01Jan2000 to datetime
     
     Parameters
@@ -1082,7 +1087,7 @@ def GrADStime_to_datetime(gradsTime):
     return time
 
 
-def GrADStime_to_datetime64(gradsTime):
+def GrADStime_to_datetime64(gradsTime: str) -> np.datetime64:
     """Convert GrADS time string e.g., 00:00z01Jan2000 to numpy.datetime64
     
     Parameters
@@ -1097,10 +1102,10 @@ def GrADStime_to_datetime64(gradsTime):
     """
     time = GrADStime_to_datetime(gradsTime)
     
-    return datetime64(time.strftime('%Y-%m-%dT%H:%M:%S'))
+    return np.datetime64(time.strftime('%Y-%m-%dT%H:%M:%S'))
 
 
-def GrADS_increment_to_timedelta64(incre):
+def GrADS_increment_to_timedelta64(incre: str) -> np.timedelta64:
     """Convert GrADS time increment string to numpy.timedelta64
     
     Parameters
@@ -1124,5 +1129,5 @@ def GrADS_increment_to_timedelta64(incre):
         'mo': 'M',
         'yr': 'Y'}
 
-    return timedelta64(int(amount), unitDict[unit])
+    return np.timedelta64(int(amount), unitDict[unit])
 

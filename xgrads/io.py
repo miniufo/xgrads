@@ -5,20 +5,28 @@ Created on 2020.04.11
 @author: MiniUFO
 Copyright 2018. All rights reserved. Use is subject to license terms.
 """
+from __future__ import annotations
+from typing import Any, Optional, Sequence, Tuple, Union
 import os
-import numpy as np
-import xarray as xr
-import dask.array as dsa
-from dask.base import tokenize
+import warnings
+from functools import reduce
 from glob import glob
 from pathlib import Path
-from .core import CtlDescriptor
-from functools import reduce
+import dask.array as dsa
+import numpy as np
+import xarray as xr
+from dask.base import tokenize
+from .core import CtlDescriptor, CtlVar
+
 
 """
 IO related functions here
 """
-def open_mfdataset(paths, parallel=False, encoding='GBK'):
+def open_mfdataset(
+    paths: Union[str, Sequence[str], Sequence[Path]],
+    parallel: bool = False,
+    encoding: str = 'GBK'
+) -> xr.Dataset:
     """Open multiple ctl files as a single dataset
     
     This is similar to `xarray.open_mfdataset()` that can simutaneously open
@@ -79,7 +87,11 @@ def open_mfdataset(paths, parallel=False, encoding='GBK'):
     return combined
 
 
-def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
+def open_CtlDataset(
+    desfile: Union[str, CtlDescriptor],
+    returnctl: bool = False,
+    encoding: str = 'GBK'
+) -> Union[xr.Dataset, Tuple[xr.Dataset, CtlDescriptor]]:
     """Open a single ctl dataset
     
     Open a 4D dataset with a descriptor file end with .ctl and
@@ -130,7 +142,7 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
     
                 tcPerf.append(fsize // ctl.tRecLength)
             else:
-                print(' warning: ' + file + ' is missing...')
+                warnings.warn(file + ' is missing...')
                 has_missing = True
         
         if has_missing:
@@ -161,7 +173,7 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
         binData = __read_template_as_dask(ctl, tcPerf_m)
 
     else:
-        if ctl.edef == None:
+        if ctl.edef is None:
             expect = ctl.tRecLength * ctl.tdef.length()
         else:
             expect = 0
@@ -171,8 +183,9 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
         actual = os.path.getsize(ctl.dsetPath)
 
         if expect != actual:
-            print('WARNING: expected binary file size: {0}, actual size: {1}'
-                            .format(expect, actual))
+            warnings.warn(
+                'expected binary file size: {0}, actual size: {1}'
+                .format(expect, actual))
 
         binData = __read_as_dask(ctl)
 
@@ -293,7 +306,7 @@ def open_CtlDataset(desfile, returnctl=False, encoding='GBK'):
 """
 Helper (private) methods are defined below
 """
-def __read_as_dask(dd):
+def __read_as_dask(dd: CtlDescriptor) -> list[dsa.Array]:
     """Read binary data and return as a dask array
 
     Parameters
@@ -330,7 +343,7 @@ def __read_as_dask(dd):
 
         if totalNum < (100 * 100 * 100 * 10): # about 40 MB, chunk all
             # print('small')
-            if dd.edef == None:
+            if dd.edef is None:
                 chunk = (t, v.zcount, y, x)
                 shape = (t, v.zcount, y, x)
     
@@ -352,7 +365,7 @@ def __read_as_dask(dd):
 
         elif totalNum > (200 * 100 * 100 * 100): # about 800 MB, chunk 2D slice
             # print('large')
-            if dd.edef == None:
+            if dd.edef is None:
                 chunk = (1, 1, y, x)
                 shape = (t, v.zcount, y, x)
 
@@ -379,7 +392,7 @@ def __read_as_dask(dd):
 
         else: # in between, chunk 3D slice
             # print('between')
-            if dd.edef == None:
+            if dd.edef is None:
                 chunk = (1, v.zcount, y, x)
                 shape = (t, v.zcount, y, x)
     
@@ -404,7 +417,7 @@ def __read_as_dask(dd):
     return binData
 
 
-def __read_template_as_dask(dd, tcPerf):
+def __read_template_as_dask(dd: CtlDescriptor, tcPerf: list[int]) -> list[dsa.Array]:
     """Read template binary data and return as a dask array
 
     Parameters
@@ -446,11 +459,11 @@ def __read_template_as_dask(dd, tcPerf):
             chunk = (1, 1, y, x)
             shape = (t, v.zcount, y, x)
 
-            dsk = {(name, l + sum(tcPerf[:m]), k, 0, 0):
+            dsk = {(name, l + sum(tcPerf[:fi]), k, 0, 0):
                    (__read_var, f, v, 0, dd.tRecLength,
                     l, k, dtype, sequentialSize)
-                   for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
-                   for l in range(tcPerf[m])
+                   for fi, f in enumerate(dd.dsetPath[:len(tcPerf)])
+                   for l in range(tcPerf[fi])
                    for k in range(v.zcount)}
 
             binData.append(dsa.Array(dsk, name, chunk,
@@ -461,11 +474,11 @@ def __read_template_as_dask(dd, tcPerf):
             chunk = (1, v.zcount, y, x)
             shape = (t, v.zcount, y, x)
 
-            dsk = {(name, l + sum(tcPerf[:m]), 0, 0, 0):
+            dsk = {(name, l + sum(tcPerf[:fi]), 0, 0, 0):
                    (__read_var, f, v, 0, dd.tRecLength,
                     l, None, dtype, sequentialSize)
-                   for m, f in enumerate(dd.dsetPath[:len(tcPerf)])
-                   for l in range(tcPerf[m])}
+                   for fi, f in enumerate(dd.dsetPath[:len(tcPerf)])
+                   for l in range(tcPerf[fi])}
 
             binData.append(dsa.Array(dsk, name, chunk,
                                      dtype=dtype, shape=shape))
@@ -473,7 +486,16 @@ def __read_template_as_dask(dd, tcPerf):
     return binData
 
 
-def __read_var(file, var, epos, tstride, tstep, zstep, dtype, sequentialSize=-1):
+def __read_var(
+    file: str,
+    var: CtlVar,
+    epos: int,
+    tstride: int,
+    tstep: Optional[int],
+    zstep: Optional[int],
+    dtype: str,
+    sequentialSize: int = -1
+) -> np.ndarray:
     """Read a variable given the trange
 
     Parameters
@@ -587,8 +609,14 @@ def __read_var(file, var, epos, tstride, tstep, zstep, dtype, sequentialSize=-1)
                         ', only "99" or "-1,20" are supported')
 
 
-def __read_continuous(file, offset=0, shape=None, dtype='<f4',
-                      use_mmap=True, sequentialShape=None):
+def __read_continuous(
+    file: str,
+    offset: int = 0,
+    shape: Optional[Tuple[int, ...]] = None,
+    dtype: str = '<f4',
+    use_mmap: bool = True,
+    sequentialShape: Optional[Tuple[int, ...]] = None
+) -> np.ndarray:
     """
     Read a block of continuous data into the memory.
 
@@ -623,7 +651,5 @@ def __read_continuous(file, offset=0, shape=None, dtype='<f4',
         data = data.reshape((shape[0],shape[1],-1))[:,:,1:-1]
 
     data = data.reshape(shape, order='C')
-
-    data.shape = shape
 
     return data

@@ -5,10 +5,15 @@ Created on 2020.08.01
 @author: MiniUFO
 Copyright 2018. All rights reserved. Use is subject to license terms.
 """
-import xarray as xr
+from __future__ import annotations
+from typing import TYPE_CHECKING, Any, Union
 import numpy as np
+import xarray as xr
 import numba as nb
 from numba.typed import List
+
+if TYPE_CHECKING:
+    from .core import CtlDescriptor
 
 _Rearth = 6371200
 
@@ -16,7 +21,11 @@ _Rearth = 6371200
 """
 Some map projection function useful for plotting
 """
-def get_data_projection(ctl, globe=None, Rearth=_Rearth):
+def get_data_projection(
+    ctl: CtlDescriptor,
+    globe: Any = None,
+    Rearth: float = _Rearth
+) -> Any:
     """Get Projection
     
     Return the data projection indicated in PDEF for plot using cartopy.
@@ -45,7 +54,7 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
     
     pdef = ctl.pdef
     
-    if globe == None: # default globe
+    if globe is None: # default globe
         globe = ccrs.Globe(ellipse='sphere',
                            semimajor_axis=Rearth, semiminor_axis=Rearth)
     
@@ -98,9 +107,15 @@ def get_data_projection(ctl, globe=None, Rearth=_Rearth):
             return ccrs.SouthPolarStereo(globe=globe,
                       central_longitude = pdef.lonref,
                       true_scale_latitude = -60) # used by GrADS?
+        
+        else:
+            raise Exception('unsupported projection ' + PROJ)
 
 
-def interp_to_latlon(var, ctl):
+def interp_to_latlon(
+    var: xr.DataArray,
+    ctl: Union[str, "CtlDescriptor"]
+) -> xr.DataArray:
     """Interpolate PDEF data onto lat/lon grids
     
     Interpolate the preprojected data onto lat/lon grids defined by ctl.
@@ -128,7 +143,11 @@ def interp_to_latlon(var, ctl):
     return var.interp(dict(y=ypos, x=xpos))
 
 
-def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
+def get_coordinates_from_PDEF(
+    ctl: Union[str, "CtlDescriptor"],
+    latlon: bool = True,
+    Rearth: float = _Rearth
+) -> tuple[xr.DataArray, xr.DataArray]:
     """
     Calculate coordinates based on the PDEF information.
     
@@ -239,8 +258,17 @@ def get_coordinates_from_PDEF(ctl, latlon=True, Rearth=_Rearth):
         return reY, reX
 
 
-def oacressman(dataS, lonS, latS, dimS, lonG, latG,
-               rads=[10, 7, 4, 2, 1], undef=-9.99e8, method='cressman'):
+def oacressman(
+    dataS: xr.DataArray,
+    lonS: xr.DataArray,
+    latS: xr.DataArray,
+    dimS: str,
+    lonG: Union[xr.DataArray, np.ndarray, list[float]],
+    latG: Union[xr.DataArray, np.ndarray, list[float]],
+    rads: Union[float, list[float], None] = None,
+    undef: float = -9.99e8,
+    method: str = 'cressman'
+) -> tuple[xr.DataArray, xr.DataArray]:
     r"""Objective analysis using Cressmen method [1]_
     
     The function tries to reproduce `oacres` in GrADS.  Note that:
@@ -289,6 +317,9 @@ def oacressman(dataS, lonS, latS, dimS, lonG, latG,
     wei: xarray.DataArray
         Normalized total weights.
     """
+    if rads is None:
+        rads = [10, 7, 4, 2, 1]
+
     if isinstance(lonG, list):
         lonG = xr.DataArray(lonG, dims='lon', coords={'lon': lonG})
     if isinstance(latG, list):
@@ -330,25 +361,30 @@ def oacressman(dataS, lonS, latS, dimS, lonG, latG,
 """
 Helper (private) methods are defined below
 """
-def __slice(dataS, lonS, latS, lonG, latG, dataG, weis,
-            rad, undef, method='cressman'):
+def __slice(
+    dataS: np.ndarray,
+    lonS: np.ndarray,
+    latS: np.ndarray,
+    lonG: np.ndarray,
+    latG: np.ndarray,
+    dataG: np.ndarray,
+    weis: np.ndarray,
+    rad: float,
+    undef: float,
+    method: str = 'cressman'
+) -> tuple[np.ndarray, np.ndarray]:
     #print(dataS.shape, lonS.shape, latS.shape, lonG.shape,
     #      latG.shape, dataG.shape, rad, undef)
-    if method == 'cressman':
-        func_wei = __weight_cressman
-    else:
-        func_wei = __weight_exp
-    
     stntag, stnwei, grdtag, grdwei = __cWeights(dataS, lonS, latS, lonG, latG,
-                                                rad, func_wei)
+                                                rad, method)
     
     tmp = __interp_to_stations(dataG, stntag, stnwei, dataS, undef)
     
     return __interp_to_grids(dataS-tmp, grdtag, grdwei, dataG, weis, rad, undef)
 
 
-@nb.jit(nopython=True, cache=False)
-def __cWeights(dataS, lonS, latS, lonG, latG, rad, func_wei):
+@nb.jit(nopython=True, cache=True)
+def __cWeights(dataS, lonS, latS, lonG, latG, rad, method):
     r"""calculate weights and store them
     
     Parameters
@@ -365,6 +401,8 @@ def __cWeights(dataS, lonS, latS, lonG, latG, rad, func_wei):
         A 1D array for latitudes of the grid (should be linear).
     rad: float
         Radius (in radian) at which the analysis is performed.
+    method: str
+        Weighting method: 'cressman' or 'exp'.
     
     Returns
     -------
@@ -377,6 +415,7 @@ def __cWeights(dataS, lonS, latS, lonG, latG, rad, func_wei):
     grdwei: list
         Weights of stations near a grid point
     """
+    is_cressman = (method == 'cressman')
     yc, xc = len(latG), len(lonG)
     sc     = len(dataS)
     
@@ -400,7 +439,7 @@ def __cWeights(dataS, lonS, latS, lonG, latG, rad, func_wei):
                         rad2 = rad  ** 2.0
                         dis2 = sdis ** 2.0
                         tmp1.append([j, i])
-                        tmp2.append(func_wei(rad2, dis2))
+                        tmp2.append(__weight_cressman(rad2, dis2) if is_cressman else __weight_exp(rad2, dis2))
         
         stntag.append(np.array(tmp1))
         stnwei.append(np.array(tmp2))
@@ -420,7 +459,7 @@ def __cWeights(dataS, lonS, latS, lonG, latG, rad, func_wei):
                         rad2 = rad  ** 2.0
                         dis2 = sdis ** 2.0
                         tmp1.append(s)
-                        tmp2.append(func_wei(rad2, dis2))
+                        tmp2.append(__weight_cressman(rad2, dis2) if is_cressman else __weight_exp(rad2, dis2))
             
             grdtag.append(np.array(tmp1))
             grdwei.append(np.array(tmp2))
@@ -428,7 +467,7 @@ def __cWeights(dataS, lonS, latS, lonG, latG, rad, func_wei):
     return stntag, stnwei, grdtag, grdwei
 
 
-@nb.jit(nopython=True, cache=False)
+@nb.jit(nopython=True, cache=True)
 def __interp_to_stations(dataG, stntag, stnwei, dataS, undef=-9.99e8):
     x = dataS.shape[0]
     
@@ -458,7 +497,7 @@ def __interp_to_stations(dataG, stntag, stnwei, dataS, undef=-9.99e8):
     return re
 
 
-@nb.jit(nopython=True, cache=False)
+@nb.jit(nopython=True, cache=True)
 def __interp_to_grids(dataS, grdtag, grdwei, dataG, weisG, rad, undef=-9.99e8):
     y, x = dataG.shape
 
@@ -492,7 +531,7 @@ def __interp_to_grids(dataS, grdtag, grdwei, dataG, weisG, rad, undef=-9.99e8):
     return re, we
 
 
-@nb.jit(nopython=True, cache=False)
+@nb.jit(nopython=True, cache=True)
 def __geodist(lon1, lon2, lat1, lat2):
     """Calculate great-circle distance on a sphere of radius 1.
     
@@ -522,12 +561,12 @@ def __geodist(lon1, lon2, lat1, lat2):
     return dis
 
 
-@nb.jit(nopython=True, cache=False)
+@nb.jit(nopython=True, cache=True)
 def __weight_cressman(rad2, dis2):
     return (rad2-dis2)/(rad2+dis2)
 
 
-@nb.jit(nopython=True, cache=False)
+@nb.jit(nopython=True, cache=True)
 def __weight_exp(rad2, dis2):
     return np.exp(-dis2/(2.0*rad2))
 

@@ -90,9 +90,9 @@ Then you have the `dset` as a `xarray.Dataset`.  This is similar to [`xarray.ope
 
 If there are many `.ctl` files in a folder, we can also open all of them in a single call of `open_mfdataset` as:
 ```python
-from xgrads import open_mfDataset
+from xgrads import open_mfdataset
 
-dset = open_mfDataset('./folder/*.ctl')
+dset = open_mfdataset('./folder/*.ctl')
 
 # print all the info in ctl file
 print(dset)
