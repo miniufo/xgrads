@@ -1,4 +1,4 @@
-## 1. General Features
+## General Features
 
 
 ------------------

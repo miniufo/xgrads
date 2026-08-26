@@ -1,4 +1,4 @@
-## 3. Open binary datasets
+## Open binary datasets
 
 ---
 ### Introduction

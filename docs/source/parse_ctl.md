@@ -1,4 +1,4 @@
-﻿## 2. Parse CTL files
+## Parse CTL files
 
 ------------------
 ### Introduction

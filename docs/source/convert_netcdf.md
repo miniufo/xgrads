@@ -1,4 +1,4 @@
-## 4. Convert to NetCDF file
+## Convert to NetCDF file
 
 ---
 ### Introduction
