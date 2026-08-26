@@ -26,7 +26,7 @@ using its `Zenodo DOI <https://doi.org/10.5281/zenodo.6526520>`__.
    2.parse_ctl.md
    3.open_dataset.md
    4.convert_netcdf.md
-   Examples
+   5.Examples
 
 
    ../modules
