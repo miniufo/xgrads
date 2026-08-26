@@ -1,0 +1,15 @@
+Examples
+========
+
+Jupyter notebooks demonstrating the usage of xgrads are provided here.
+Users are also encouraged to add their own examples.
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Examples:
+
+   notebooks/Read_GrADS_ctl_file_Chn
+   notebooks/Features_of_GrADS_OpenGrADS
+   notebooks/Plot_preprojected_data_PDEF
+   notebooks/objective_analysis

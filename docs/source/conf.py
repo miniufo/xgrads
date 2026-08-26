@@ -40,8 +40,9 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',     # math
+    'sphinx.ext.viewcode',
+    'nbsphinx',               # Jupyter notebook integration
     'myst_parser',            # Markdown
-    # 'recommonmark',           # Markdown
 ]
 
 # The master toctree document.
@@ -62,8 +63,11 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
     'conf.py', 'sphinxext', '_build', '_templates', '_themes',
-    '*.ipynb', '**.ipynb_checkpoints' '.DS_Store', 'trash', 'tmp',
+    '.DS_Store', 'trash', 'tmp', '**/.ipynb_checkpoints',
 ]
+
+# nbsphinx: don't execute notebooks during docs build (avoid needing data files)
+nbsphinx_execute = 'never'
 
 
 # -- Options for HTML output -------------------------------------------------
