@@ -339,7 +339,7 @@ def __read_as_dask(dd: CtlDescriptor) -> list[dsa.Array]:
     dtype   = '<f4' if dd.byteOrder == 'little' else '>f4'
 
     for m, v in enumerate(dd.vdef):
-        name = '@miniufo_' + tokenize(v, m)
+        name = '@miniufo_' + tokenize(v, m, dd.dsetPath)
 
         if totalNum < (100 * 100 * 100 * 10): # about 40 MB, chunk all
             # print('small')
@@ -452,7 +452,7 @@ def __read_template_as_dask(dd: CtlDescriptor, tcPerf: list[int]) -> list[dsa.Ar
     dtype   = '<f4' if dd.byteOrder == 'little' else '>f4'
 
     for m, v in enumerate(dd.vdef):
-        name = '@miniufo_' + tokenize(v, m)
+        name = '@miniufo_' + tokenize(v, m, dd.dsetPath)
 
         if totalNum > (200 * 100 * 100 * 100): # about 800 MB, chunk 2D slice
             # print('large')
