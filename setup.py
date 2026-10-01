@@ -27,5 +27,5 @@ setup(
     keywords='grads opengrads xarray dask',
     packages=find_packages(exclude=['docs', 'tests', 'ctls', 'notebooks', 'pics', 'private']),
     install_requires=['numpy', 'xarray', 'dask', 'pyproj', 'numba'],
-    extras_require={'test': ['pytest', 'pytest-cov']},
+    extras_require={'test': ['pytest', 'pytest-cov', 'h5netcdf']},
 )

@@ -12,3 +12,4 @@ dependencies:
   - pooch
   - numba
   - netcdf4
+  - h5netcdf
