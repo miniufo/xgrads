@@ -11,6 +11,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+_build/
 develop-eggs/
 dist/
 downloads/
@@ -80,7 +81,6 @@ target/
 .ipynb_checkpoints
 
 # conda
-conda/
 
 # IPython
 profile_default/
