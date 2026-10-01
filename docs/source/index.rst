@@ -30,6 +30,7 @@ using its `Zenodo DOI <https://doi.org/10.5281/zenodo.6526520>`__.
    notebooks/Cressman_analysis
 
 
+   support_matrix.md
    ../modules
 
 Indices and tables

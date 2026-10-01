@@ -20,7 +20,7 @@ This python package [`xgrads`](https://github.com/miniufo/xgrads) is designed fo
 ---
 ## 2. How to install
 **Requirements**
-`xgrads` is developed under the environment with `xarray` (=version 0.15.0), `dask` (=version 2.11.0), `numpy` (=version 1.15.4), `cartopy` (=version 0.17.0), and `pyproj` (=version 1.9.6).  Older versions of these packages are not well tested.
+xgrads supports Python 3.9 through 3.13 and depends on recent versions of NumPy, xarray, dask, pyproj, and numba. Exact compatibility depends on the installed dependency versions.
 
 **Install via pip**
 ```
@@ -36,7 +36,7 @@ conda install -c conda-forge xgrads
 ```
 git clone https://github.com/miniufo/xgrads.git
 cd xgrads
-python setup.py install
+python -m pip install .
 ```
 
 

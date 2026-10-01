@@ -1,9 +1,11 @@
+Sphinx>=7.4,<9
+sphinx-rtd-theme>=2.0
+myst-parser>=3.0
+nbsphinx>=0.9
+ipywidgets
 xarray
 dask
 numba
-nbsphinx
 numpydoc
 Cython
 pyproj
-myst_parser
-sphinx_rtd_theme

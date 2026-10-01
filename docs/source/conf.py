@@ -11,7 +11,6 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import sys
 import datetime
 #sys.path.append(os.path.abspath('.'))
 #sys.path.insert(0, os.path.abspath('../../'))
@@ -64,6 +63,9 @@ templates_path = ['_templates']
 exclude_patterns = [
     'conf.py', 'sphinxext', '_build', '_templates', '_themes',
     '.DS_Store', 'trash', 'tmp', '**/.ipynb_checkpoints',
+    # listed in the repository but intentionally not published
+    'notebooks/Features_of_GrADS_OpenGrADS.ipynb',
+    'notebooks/Read_GrADS_ctl_file_Chn.ipynb',
 ]
 
 # nbsphinx: don't execute notebooks during docs build (avoid needing data files)
@@ -81,7 +83,6 @@ html_logo = os.path.join('_static', 'xgradsLogo.png')
 html_theme = 'sphinx_rtd_theme'
 html_theme_options = {
     'logo_only': True,
-    'display_version': False,
     'collapse_navigation': True,
     'navigation_depth': 4,
     'prev_next_buttons_location': 'bottom',  # top and bottom

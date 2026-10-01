@@ -1,12 +1,11 @@
-## Open binary datasets
+# Open binary datasets
 
----
-### Introduction
+## Introduction
 The most important part of [xgrads](https://github.com/miniufo/xgrads) is to load the binary data (**NOT** all of them but the portion that is needed right now) into memory as [xarray](https://docs.xarray.dev/en/stable/).  This is built on correctly parsing the CTL files.
 
 ---
-### Loading binary data
-#### Single CTL file
+## Loading binary data
+### Single CTL file
 The loading of CTL dataset does not require an explicit parsing of CTL file.  So the reading is pretty simple:
 ```python
 from xgrads import open_CtlDataset
@@ -44,7 +43,7 @@ print(dset)
 print(ctl)
 ```
 
-#### Multiple CTL files
+### Multiple CTL files
 If there are multiple CTL files describing similar spatial datasets of different time steps, one can also load them into a single dataset using `open_mfdataset()`.  This is similar to [xarray](https://docs.xarray.dev/en/stable/)'s `open_mfdataset()`.  Usually, this should be done with the [`template`](http://cola.gmu.edu/grads/gadoc/templates.html) functionality of CTL.  But simutaneously open multiple CTL datasets is also easy because of the combining of the multiple dataset is easy by making use of [xarray](https://docs.xarray.dev/en/stable/)'s `concat()` API.
 ```python
 from xgrads import open_mfdataset

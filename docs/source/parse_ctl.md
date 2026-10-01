@@ -1,13 +1,12 @@
-## Parse CTL files
+# Parse CTL files
 
-------------------
-### Introduction
+## Introduction
 One of the very fundamental purposes of [xgrads](https://github.com/miniufo/xgrads) is to properly parse a given CTL file.  Now [xgrads](https://github.com/miniufo/xgrads) supports most commonly-used CTL files except those with `dtype` (data type) being `station`, `GRIB`, or `NetCDF`.  These types of datasets, especially `GRIB` and `NetCDF` are all supported in [xarray](https://docs.xarray.dev/en/stable/), so we don't need extra efforts to support these kinds of datasets.  `station`-type of data is not very commonly-used now because interpolation can be easily done by [xarray](https://docs.xarray.dev/en/stable/)
 
 
 ------------------
-### Practice
-#### Standard CTL file
+## Practice
+### Standard CTL file
 For a standard CTL file `ElenaIsenTest.ctl` like:
 ```text
 dset ^ElenaIsenTest.dat
@@ -86,7 +85,7 @@ and the output is:
 ```
 
 
-#### CTL file with non-ASCII characters
+### CTL file with non-ASCII characters
 For a CTL file `intensity16070412.ctl` containing Chinese or other non-ASCII characters:
 ```text
 dset ^intensity16070412.dat
@@ -153,7 +152,7 @@ Otherwise, an error will be thrown as:
 UnicodeDecodeError: 'gbk' codec can't decode byte 0xb4 in position 54: illegal multibyte sequence
 ```
 
-#### CTL with template
+### CTL with template
 For a single CTL file `test8.ctl` containing `template` for describing multiple binary data files:
 ```text
 dset ^test8_%y4%m2%d2%h2.dat
@@ -202,7 +201,7 @@ endvars
        vdef: [CtlVar: air      in shape (t=4, z=1, y=25, x=53)]
 ```
 
-#### CTL with PDEF
+### CTL with PDEF
 For a CTL file `test10.ctl` containing `pdef` for describing e.g., [Lambert Conformal Conic](https://en.wikipedia.org/wiki/Lambert_conformal_conic_projection) projection dataset (usually output by numerical model like [WRF](https://www.mmm.ucar.edu/weather-research-and-forecasting-model)):
 ```text
 dset ^test10.dat
@@ -263,10 +262,10 @@ dx: 15000.0
 dy: 15000.0
 ```
 
-Note that we can use function `get_data_projection()` in `utils.py` to get a `cartopy.crs` for plotting the data.  Detailed information can be found in [this notebook](https://github.com/miniufo/xgrads/blob/master/notebooks/Plot%20preprojected%20data%20defined%20in%20PDEF.ipynb).
+Note that we can use function `get_data_projection()` in `utils.py` to get a `cartopy.crs` for plotting the data.  Detailed information can be found in {doc}`notebooks/Plot_PDEF_data`.
 
 
-#### CTL content as a string
+### CTL content as a string
 Finally, if one write CTL file content as a `str` in python code, one can also parse it using the kwarg `content=CTL_content` as:
 ```python
 CTL_content = \
