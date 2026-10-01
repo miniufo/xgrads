@@ -1,6 +1,9 @@
 name: tests
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -8,29 +11,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest",]
-        python-version: ["3.8", "3.9", "3.10"]
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
-
-      - name: setup conda environment
-        uses: conda-incubator/setup-miniconda@v2
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          miniconda-version: "latest"
           python-version: ${{ matrix.python-version }}
-          environment-file: environment.yml
-          activate-environment: xgrads
-          auto-activate-base: false
-
-      - name: Check workspace
-        run: echo ${{ github.workspace }}
-
-      - name: List installed packages
-        shell: bash -l {0}
-        run: conda list
-
+          cache: pip
+      - name: Install package and test dependencies
+        run: python -m pip install -e ".[test]"
       - name: Test with pytest
-        shell: bash -l {0}
-        run: python -m pytest
+        run: python -m pytest --cov --cov-report=term-missing
+      - name: Lint with Ruff
+        run: python -m pip install ruff && ruff check .
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -r docs/requirements.txt
+      - run: python -m sphinx -W --keep-going -b html docs/source docs/_build/html
