@@ -11,7 +11,7 @@ import sys
 import re
 from collections import namedtuple
 from datetime import datetime
-from typing import Optional, Any, Union, Callable
+from typing import Optional, Any, Union
 import numpy as np
 from numpy.typing import NDArray
 

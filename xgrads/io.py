@@ -6,7 +6,7 @@ Created on 2020.04.11
 Copyright 2018. All rights reserved. Use is subject to license terms.
 """
 from __future__ import annotations
-from typing import Any, Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 import os
 import warnings
 from functools import reduce
