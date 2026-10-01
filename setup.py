@@ -27,5 +27,10 @@ setup(
     keywords='grads opengrads xarray dask',
     packages=find_packages(exclude=['docs', 'tests', 'ctls', 'notebooks', 'pics', 'private']),
     install_requires=['numpy', 'xarray', 'dask', 'pyproj', 'numba'],
-    extras_require={'test': ['pytest', 'pytest-cov', 'h5netcdf']},
+    extras_require={
+        # `get_data_projection()` imports cartopy lazily, but the
+        # projection test exercises it, so the test extra has to pull
+        # it in as well.
+        'test': ['pytest', 'pytest-cov', 'h5netcdf', 'h5py', 'cartopy'],
+    },
 )
